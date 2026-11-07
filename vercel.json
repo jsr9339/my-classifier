@@ -4,5 +4,16 @@
       "includeFiles": "{criteria.json,examples.json}",
       "maxDuration": 30
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/(|index.html)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate"
+        }
+      ]
+    }
+  ]
 }

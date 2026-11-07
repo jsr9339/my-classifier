@@ -384,12 +384,17 @@ function buildYears(ys) {
 function showYear(ys) {
   buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false;
   loadYear(YEAR);
+  try { showYearBody(); } finally {
+    // 화면 그리다 문제가 생겨도 담당자별 문의 카드에는 확정 값이 보이게 한다
+    if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); }
+  }
+}
+function showYearBody() {
   drawStatic(); buildTargets(); buildRubric(); buildNext();
   var un = OWNERS.some(function (o) { return o.n === UNASSIGNED; });
   $("ownsrc").textContent = "출처: 처리 단계 · 날짜, 문의 성격(담당자별 탭의 문장 카드에서 확정한 값). 확정할 때마다 바로 바뀌어요." + (un ? " 담당자 이름은 «담당자별» 탭에서 칸마다 적어요." : "");
-  $("sw1").value = ST.sevw["상"]; $("sw2").value = ST.sevw["중"]; $("sw3").value = ST.sevw["하"]; $("c1").value = ST.cut[0]; $("c2").value = ST.cut[1]; $("c3").value = ST.cut[2];
+  [["sw1", ST.sevw["상"]], ["sw2", ST.sevw["중"]], ["sw3", ST.sevw["하"]], ["c1", ST.cut[0]], ["c2", ST.cut[1]], ["c3", ST.cut[2]]].forEach(function (p) { var e = $(p[0]); if (e) { e.value = p[1]; } });
   $("rep").value = reportText(); refreshAll();
-  if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); } // 처음 열 때도 담당자별 문의 카드에 확정 값이 보이게
 }
 function render(opt) {
   DASH = window.Dash.data();
