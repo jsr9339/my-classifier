@@ -812,7 +812,8 @@
   }
   function reset() {
     ROWS = []; PENDING = null; DEMO_ON = false;
-    loadDemo();
+    var bm = $("d-bk-msg"); if (bm) { bm.textContent = "예시 데이터로 되돌리는 중이에요..."; }
+    loadDemo().then(function () { if (bm) { bm.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건이고, 보낸 자동응답과 처리 단계가 처음 상태예요."; } });
   }
   function readFile(file) {
     return file.arrayBuffer().then(function (buf) {
