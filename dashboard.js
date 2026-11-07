@@ -899,7 +899,7 @@
     renderOwnerPeriod(); renderOwnerCards(groups);
     if (!skipNames) { renderOwnerNames(); }
     renderOwnerDetail(groups);
-    // 아래 «문의 성격 · 귀책 확정»이 지금 고른 사람(전체 보기면 모두)만 보여 주도록 알린다
+    // 아래 «문의 성격 확정 · 평가 반영»이 지금 고른 사람(전체 보기면 모두)만 보여 주도록 알린다
     if (window.Settle && window.Settle.sync) { window.Settle.sync(OSEL.name === ALL ? "" : OSEL.name, SEL.y); }
   }
   $("o-more").addEventListener("click", function () { OSEL.all = !OSEL.all; renderOwner(); });

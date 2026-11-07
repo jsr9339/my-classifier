@@ -110,7 +110,7 @@ function paintTarget() {
   var v = visItems(), pend = v.filter(function (it) { return kindOf(it) === "확인 전"; }).length;
   var who = WHO ? WHO + " 님 · " + (OWNERS.filter(function (o) { return o.n === WHO; })[0] || { cats: "" }).cats : "전체 담당자";
   $("target").textContent = "확정 대상: " + who + " · 문의 " + v.length + "건 (확인 전 " + pend + "건)";
-  $("target2").textContent = "귀책 대상: " + (WHO ? WHO + " 님의 기한 넘김, 그리고 " + WHO + " 님 귀책으로 확정된 문의" : "전체 담당자의 기한 넘김과 귀책으로 확정된 문의");
+  $("target2").textContent = "평가 반영 대상: " + (WHO ? WHO + " 님 귀책으로 확정된 문의, 그리고 " + WHO + " 님의 기한 넘김" : "전체 담당자의 귀책 확정 문의와 기한 넘김");
 }
 function compute() {
   var rows = OWNERS.map(function (o) {
@@ -337,7 +337,7 @@ function renderOwnerPanel() {
   list.forEach(function (it) { ul.appendChild(card(it, SUB === "확정")); });
 }
 
-/* 담당자별 현황 + 귀책 여부 확정 + 점수 */
+/* 담당자별 현황 + 평가 반영 + 점수 */
 function buildAdj() {
   var b = $("adj"); b.textContent = "";
   OWNERS.filter(function (o) { return mine(o.n); }).forEach(function (o) {
@@ -507,7 +507,7 @@ function buildYears(ys) {
 }
 function showYear(ys) {
   buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false; $("adjwrap").hidden = false;
-  $("adjyear").textContent = "문의 성격 · 귀책 확정은 위에서 고른 담당자(또는 전체 보기)의 것만 보여 줘요. " + YEAR + "년 자료 기준이에요. 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
+  $("adjyear").textContent = "문의 성격 확정 · 평가 반영은 위에서 고른 담당자(또는 전체 보기)의 것만 보여 줘요. " + YEAR + "년 자료 기준이에요. 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
   loadYear(YEAR); PICK = ""; TAB = "";
   drawStatic(); buildTargets(); buildAdj(); buildRubric(); buildNext();
   var un = OWNERS.some(function (o) { return o.n === UNASSIGNED; });
