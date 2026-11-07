@@ -89,7 +89,8 @@
     if (si === -1 && /^[0-3]$/.test(st)) { si = +st; }
     if (si !== -1) { r.step = si; }
     r.stamps[1] = validDate(x.asg); r.stamps[2] = validDate(x.doing); r.stamps[3] = validDate(x.done);
-    r.auto = (x.auto || "").trim().slice(0, 40); // 자동응답으로 처리했으면 그 답변 이름
+    r.auto = (x.auto || "").trim().slice(0, 40);
+    r.kc = /^(예|y|yes|true|1)$/i.test((x.kc || "").trim()); // 자동응답 탭에서 문의 성격을 바꾼 건 // 자동응답으로 처리했으면 그 답변 이름
     r.note = (x.note || "").trim().slice(0, 300); // 처리 내용: 무엇을 했는지 적은 글
     r.owner = (x.owner || "").trim().slice(0, 20); // 칸의 담당자와 다르게 직접 고른 담당자(없으면 칸을 따른다)
     return r;
@@ -113,7 +114,7 @@
     var di = colIndex(head, ["날짜", "접수일", "date"]);
     var ix = { cat: colIndex(head, ["칸"]), urg: colIndex(head, ["긴급도"]), reason: colIndex(head, ["이유"]), chk: colIndex(head, ["사람확인"]),
       step: colIndex(head, ["단계"]), asg: colIndex(head, ["배정일"]), doing: colIndex(head, ["처리시작일"]), done: colIndex(head, ["완료일"]),
-      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]), note: colIndex(head, ["처리내용"]), auto: colIndex(head, ["자동응답"]) };
+      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]), note: colIndex(head, ["처리내용"]), auto: colIndex(head, ["자동응답"]), kc: colIndex(head, ["성격변경"]) };
     var out = [];
     table.slice(1).forEach(function (c) {
       var raw = (c[ti] || "").trim();
@@ -734,10 +735,10 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function download() {
-    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자", "처리내용", "자동응답"];
+    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자", "처리내용", "자동응답", "성격변경"];
     var lines = [head.join(",")].concat(ROWS.map(function (r) {
       return [r.date || (r.y + "-" + pad(r.m)), r.text, r.cat, r.urg, r.reason || "", r.chk ? "예" : "", r.sens ? "예" : "", STEPS[r.step],
-        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || "", r.note || "", r.auto || ""].map(csvCell).join(",");
+        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || "", r.note || "", r.auto || "", r.kc ? "예" : ""].map(csvCell).join(",");
     }));
     saveCSV(lines, "의견함_분류결과.csv");
   }
@@ -770,10 +771,15 @@
         var r = makeRow(x.t, x.d, { cat: x.c, urg: x.u, chk: x.k ? "예" : "", step: String(x.s) });
         r.src = "예시";
         if (x.n) { r.note = x.n; } // 처리 완료 건의 지어낸 처리 내용(예시)
+        if (x.kc) { r.kc = true; } // 문의 성격을 바꾼 예시
         if (x.g) { r.preset = { kind: x.g, cand: x.cd || "", sum: x.sm || "", tag: x.tg || "" }; } // 운영 결산 탭의 처음 값(예시)
         // 예시의 단계별 날짜는 접수일에 며칠씩 더해 만든다
         var base = toDate(x.d);
         for (var k = 1; k <= x.s; k++) { r.stamps[k] = dstr(new Date(base.getTime() + (k * 2 + (i % 3)) * DAY)); }
+        if (x.au) { // 자동응답으로 처리한 예시: 접수 다음 날 끝난 것으로 적는다
+          r.auto = x.au; r.autoPrev = { step: 0, stamps: ["", "", "", ""], note: "" };
+          var ad = new Date(base.getTime() + DAY); for (var ai = 1; ai < 4; ai++) { r.stamps[ai] = dstr(ad); }
+        }
         return r;
       });
       DEMO_ON = true;
