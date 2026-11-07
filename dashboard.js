@@ -650,7 +650,7 @@
         return r;
       });
       DEMO_ON = true;
-      openDashboard("예시 데이터예요. 지어낸 문장 60개이고, 날짜와 처리 단계도 임의의 값이에요.");
+      openDashboard("예시 데이터예요. 지어낸 문장 " + d.rows.length + "개이고, 1~11월에 나눠 담았고, 날짜와 처리 단계도 임의의 값이에요.");
     }).catch(function (e) { f.hidden = false; f.textContent = (e && e.message) || "예시 데이터를 불러오지 못했어요."; });
   }
   function ensureData() { return ROWS.length ? Promise.resolve() : loadDemo(); }
