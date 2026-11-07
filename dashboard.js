@@ -479,6 +479,9 @@
       var m = window.Auto.match(r.text); if (!m) { return; }
       r.autoPrev = { step: r.step, stamps: r.stamps.slice(), note: r.note || "" };
       setStep(r, 3); r.note = ("[자동응답] " + m.text).slice(0, 300); r.auto = m.name;
+      // 자동응답은 바로 답한 것이라 접수 다음 날(늦어도 오늘)에 끝난 것으로 적는다 → 경과 1일(빠름)
+      var rd = toDate(r.date), fd = rd ? new Date(rd.getTime() + DAY) : todayDate(); if (fd > todayDate()) { fd = todayDate(); }
+      for (var si = 1; si < 4; si++) { r.stamps[si] = dstr(fd); }
     });
   }
   function undoAuto(r) {
@@ -537,6 +540,7 @@
   var KCLS = { "단순 문의": "s", "업무 오류": "e", "응대 문제": "r", "제도·시스템·외부": "y", "현업 팀장·팀원": "f", "확인 전": "u" };
   var EV_FAULT = { "업무 오류": 1, "응대 문제": 1 };
   function elapsedDays(r) {
+    if (r.auto) { return 1; } // 자동응답으로 처리한 건은 바로 답한 것이라 1일(빠름)
     var a = toDate(r.date); if (!a) { return null; }
     var end = r.step === 3 && toDate(r.stamps[3]) ? toDate(r.stamps[3]) : todayDate();
     return Math.max(0, Math.round((end - a) / DAY));
@@ -561,7 +565,7 @@
         var s = el("span", "p" + i + (i === cur ? " on" : ""), p[0]); s.title = p[0] + " (" + p[1] + ")"; scale.appendChild(s);
       });
       c1b.appendChild(scale);
-      c1b.appendChild(el("span", "sub", "접수 " + r.date.slice(5) + " → " + (done ? r.stamps[3] : dstr(todayDate())).slice(5)));
+      c1b.appendChild(el("span", "sub", r.auto ? "자동응답으로 바로 처리" : "접수 " + r.date.slice(5) + " → " + (done ? r.stamps[3] : dstr(todayDate())).slice(5)));
     }
     row.appendChild(c1b);
     var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
@@ -836,8 +840,8 @@
   // 같은 이름을 적은 칸들은 한 사람으로 묶는다. 예시 데이터일 때만 이름이 미리 들어 있다.
   var DEMO = { "급여": "도하준", "복지": "윤지안", "조직문화": "배서윤", "리더십": "남도윤", "안전보건": "문세아", "온보딩": "노이든", "평가": "류하린", "기타": "문세아" };
   var UNASSIGNED = "담당자 미지정", ALL = "전체 보기"; // ALL: 담당자 전체를 한 번에 보는 카드
-  var OFILTERS = ["전체", "처리 완료", "처리 중", "담당자 배정", "접수"], OSTEP = { "처리 완료": 3, "처리 중": 2, "담당자 배정": 1, "접수": 0 };
-  function stateMatch(r, f) { return f === "전체" || r.step === OSTEP[f]; }
+  var OFILTERS = ["전체", "처리 완료", "처리 중", "담당자 배정", "접수", "자동응답"], OSTEP = { "처리 완료": 3, "처리 중": 2, "담당자 배정": 1, "접수": 0 };
+  function stateMatch(r, f) { return f === "전체" || (f === "자동응답" ? !!r.auto : r.step === OSTEP[f]); }
 
   function periodLabel() { return selLabel(SEL.ms); }
   // 담당자별 탭은 달을 여러 개 체크해서 합쳐 볼 수 있다(누적). 아무것도 체크하지 않으면 연 전체.
@@ -931,6 +935,8 @@
       if (g.hi) { tags.appendChild(el("span", "chip hi", "긴급 높음 " + g.hi)); }
       if (g.open && !g.over && !g.hi) { tags.appendChild(el("span", "chip", "처리 안 된 것 " + g.open)); }
       if (!g.open) { tags.appendChild(el("span", "chip ok", "모두 처리")); }
+      var na = g.rows.filter(function (r) { return r.auto; }).length;
+      if (na) { tags.appendChild(el("span", "chip auto", "자동응답 " + na)); }
       b.appendChild(tags);
       b.addEventListener("click", function () { OSEL.name = g.name; OSEL.all = false; renderOwner(); });
       box.appendChild(b);
