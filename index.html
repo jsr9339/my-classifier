@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="style.css?v=ee85f1c2">
-<link rel="stylesheet" href="settle.css?v=ee85f1c2">
+<link rel="stylesheet" href="style.css?v=8306e149">
+<link rel="stylesheet" href="settle.css?v=8306e149">
 </head>
 <body>
 <div class="page wide">
@@ -29,6 +29,15 @@
     <p id="status" class="status" role="status"></p>
 
     <div class="split">
+      <details class="guide" id="guide" open>
+        <summary>처음이세요? 이렇게 쓰세요</summary>
+        <ol>
+          <li><b>분류</b> 의견을 한 줄씩 넣거나 여러 줄(CSV)을 올려 칸 · 긴급도를 가려요. 자료가 없어도 예시 데이터로 모든 화면을 써 볼 수 있어요.</li>
+          <li><b>담당자별</b> 탭에서 «담당자 이름 정하기»로 칸마다 담당자를 적고, 문의 카드의 «고치기»로 문의 성격 · 평가 반영을 확정해요.</li>
+          <li><b>자동응답</b> 탭에서 단순 문의에 답변을 골라 «처리하고 답변 복사»를 누른 뒤, 메일이나 메신저로 직접 보내요.</li>
+          <li><b>운영 현황 · 운영 결산</b>에서 진행과 연말 점수(예시)를 보고, «전체 백업»으로 파일을 내려받아 두세요.</li>
+        </ol>
+      </details>
     <section id="tab-classify">
       <div id="chat" class="chat" aria-live="polite">
         <div class="sys">의견 한 줄을 보내면 AI가 칸과 긴급도를 알려드려요.<br>결과는 추정이에요.</div>
@@ -140,8 +149,7 @@
         <div class="inforow"><p id="d-info" class="hint info" hidden></p><button type="button" id="d-mine" class="btn plain" hidden>내 의견으로 분류하러 가기</button></div>
         <div class="dpanel">
           <h2>기간 <small>연과 월을 골라 보세요</small></h2>
-          <div class="pctl"><label class="flab" for="d-year">연도</label><select id="d-year"></select></div>
-          <div class="pctl"><span class="flab">월</span><div class="months" id="d-months" role="group" aria-label="월 선택"></div></div>
+          <div class="pctl pone"><select id="d-year" aria-label="연도"></select><div class="months" id="d-months" role="group" aria-label="월 선택"></div></div>
           <p class="fine" style="margin:0 0 4px">달을 여러 개 눌러 체크하면 그 달들을 모아서(누적) 봐요. «연 전체»를 누르면 모든 달이 체크되고, 다시 누르면 모두 풀려요.</p>
           <h3 id="d-trend-h">월별 접수 건수</h3>
           <div class="trend" id="d-trend"></div>
@@ -198,8 +206,7 @@
       <div id="o-main" hidden>
         <div class="dpanel">
           <h2>기간 <small id="o-sub"></small></h2>
-          <div class="pctl"><label class="flab" for="o-year">연도</label><select id="o-year"></select></div>
-          <div class="pctl"><span class="flab">월</span><div class="months" id="o-months" role="group" aria-label="월 선택"></div></div>
+          <div class="pctl pone"><select id="o-year" aria-label="연도"></select><div class="months" id="o-months" role="group" aria-label="월 선택"></div></div>
           <p class="fine" style="margin:0 0 4px">달을 여러 개 눌러 체크하면 그 달들을 모아서(누적) 봐요. «연 전체»를 누르면 모든 달이 체크되고, 다시 누르면 모두 풀려요.</p>
         </div>
 
@@ -214,7 +221,7 @@
         </div>
 
         <div class="dpanel" id="o-detail">
-          <div class="otrow"><h2 id="o-title"></h2><button type="button" id="o-copy" class="btn plain" title="이 담당자에게 보낼 처리 요청 글을 만들어 복사해요">처리요청</button></div>
+          <div class="otrow"><h2 id="o-title"></h2><span class="otbtns"><button type="button" id="o-compact" class="btn plain" aria-pressed="false" title="문의 카드를 한 줄 요약으로 접어 보거나 모두 펼쳐 봐요">요약만 보기</button><button type="button" id="o-copy" class="btn plain" title="이 담당자에게 보낼 처리 요청 글을 만들어 복사해요">처리요청</button></span></div>
           <textarea id="o-box" rows="10" readonly hidden aria-label="담당자에게 보낼 처리 요청 글"></textarea>
           <div class="tiles" id="o-tiles"></div>
           <ul class="items" id="o-items"></ul>
@@ -345,11 +352,11 @@
 
   </main>
 </div>
-<script src="mask.js?v=ee85f1c2"></script>
-<script src="rules.js?v=ee85f1c2"></script>
-<script src="app.js?v=ee85f1c2"></script>
-<script src="dashboard.js?v=ee85f1c2"></script>
-<script src="auto.js?v=ee85f1c2"></script>
-<script src="settle.js?v=ee85f1c2"></script>
+<script src="mask.js?v=8306e149"></script>
+<script src="rules.js?v=8306e149"></script>
+<script src="app.js?v=8306e149"></script>
+<script src="dashboard.js?v=8306e149"></script>
+<script src="auto.js?v=8306e149"></script>
+<script src="settle.js?v=8306e149"></script>
 </body>
 </html>

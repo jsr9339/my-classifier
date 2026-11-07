@@ -228,7 +228,7 @@ function formParts(it, open, kind) {
   var l2b = el("label", "", "귀책 중대성 (상 · 중 · 하)"), ss = el("select", "in");
   SEVS.forEach(function (v) { var op = el("option", "", v); op.value = v; ss.appendChild(op); }); ss.value = sevOf(it); l2b.appendChild(ss);
   frm.appendChild(lc); frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); frm.appendChild(l3); 
-  var err = el("p", "err"); err.hidden = true;
+  var err = el("p", "err"); err.hidden = true; err.setAttribute("role", "alert");
   var btns = el("div", "btns"), cf = el("button", "btn sm fill", kind === "확인 전" ? "확정" : "수정 저장"), rv = el("button", "btn sm", "확인 전으로 되돌리기"), ed = el("button", "btn sm", "수정");
   cf.type = "button"; rv.type = "button"; ed.type = "button"; cf.hidden = !open; rv.hidden = !open || kind === "확인 전"; ed.hidden = open;
   btns.appendChild(ed); btns.appendChild(cf); btns.appendChild(rv);

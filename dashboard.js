@@ -615,6 +615,23 @@
     }
     return box;
   }
+  // 담당자별 탭의 문의 카드를 한 줄 요약으로 접어 볼 수 있다 (기본은 모두 펼침). 고른 방식은 이 브라우저에 기억한다.
+  var COMPACT = false;
+  try { COMPACT = localStorage.getItem("owner-compact") === "1"; } catch (e) { /* 저장이 막혀도 동작한다 */ }
+  function setCompact(v) { COMPACT = v; try { localStorage.setItem("owner-compact", v ? "1" : "0"); } catch (e) { /* 같음 */ } render(); }
+  function paceName(n) { return n <= 1 ? "빠름" : n <= OVERDUE ? "보통" : "기한 넘김"; }
+  function summaryLine(r) {
+    var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null, n = elapsedDays(r), box = el("div", "csum");
+    box.appendChild(el("span", "chip src", STEPS[r.step]));
+    if (n !== null) { box.appendChild(el("span", "chip src", paceName(n) + " · " + n + "일")); }
+    if (inf) {
+      box.appendChild(el("span", "chip src", inf.kind));
+      if (EV_FAULT[inf.kind]) { box.appendChild(el("span", "chip src", inf.pending ? "평가 미확정" : (inf.inc ? "평가 반영" : "평가 제외"))); }
+    }
+    box.appendChild(el("span", "chip src", r.note ? "처리 내용 있음" : "처리 내용 없음"));
+    var op = el("button", "ev-link", "펼치기 ▾"); op.type = "button"; op.addEventListener("click", function () { r.openCard = true; render(); });
+    box.appendChild(op); return box;
+  }
   function itemLi(r, full) {
     var li = el("li", r.step === 3 ? "done" : ""), t = el("div", "t");
     t.appendChild(el("span", "chip", r.cat));
@@ -635,6 +652,8 @@
     if (r.reason) { li.appendChild(el("p", "why", r.reason)); }
     if (r.alt) { li.appendChild(el("p", "why alt", "두 번째 분류는 " + r.alt.cat + " / " + r.alt.urg + "였어요. 사람이 확인해 주세요.")); }
     if (r.edited) { li.appendChild(el("p", "why", "AI 분류: " + r.aiCat + " / " + r.aiUrg)); }
+    if (full && COMPACT && !r.openCard) { li.appendChild(summaryLine(r)); return li; } // 요약만 보기
+    if (full && COMPACT && r.openCard) { var fold = el("button", "ev-link", "접기 ▴"); fold.type = "button"; fold.addEventListener("click", function () { r.openCard = false; render(); }); li.appendChild(fold); }
     if (r.editing || full) { li.appendChild(editor(r, full)); }
     if (full) { var ev = evalStrip(r); if (ev) { li.appendChild(ev); } }
     li.appendChild(stepper(r));
@@ -1045,6 +1064,7 @@
     $("o-detail").hidden = false;
     $("o-title").textContent = isAll ? "전체 보기 · 담당자 " + groups.length + "명 모두" : g.name + " · " + g.catList.join(" · ");
     $("o-copy").hidden = isAll; // 한 사람에게 보낼 글이라서 전체 보기에서는 숨긴다
+    $("o-compact").textContent = COMPACT ? "모두 펼치기" : "요약만 보기"; $("o-compact").setAttribute("aria-pressed", String(COMPACT));
     // 위의 네모가 곧 보기다: 누르면 그 처리 상태의 문장만 바로 보여 준다
     var tiles = $("o-tiles"); tiles.textContent = "";
     OFILTERS.forEach(function (f) {
@@ -1083,6 +1103,7 @@
     if (window.Settle && window.Settle.sync) { window.Settle.sync(OSEL.name === ALL ? "" : OSEL.name, SEL.y); }
   }
   $("o-more").addEventListener("click", function () { OSEL.all = !OSEL.all; renderOwner(); });
+  $("o-compact").addEventListener("click", function () { ROWS.forEach(function (r) { r.openCard = false; }); setCompact(!COMPACT); });
   $("o-go").addEventListener("click", function () { $("btn-classify").click(); });
 
   // ---------- 채점 탭: 내 데이터로 채점 ----------

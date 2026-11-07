@@ -26,7 +26,9 @@
       $("tab-" + n).hidden = n !== name;
       $("btn-" + n).setAttribute("aria-selected", String(n === name));
     });
-    $("tab-grade").hidden = name !== "classify"; // 채점은 분류 탭 아래에 이어서 보인다
+    $("tab-grade").hidden = name !== "classify"; // 채점은 분류 탭 옆에 이어서 보인다
+    $("guide").hidden = name !== "classify";
+    ["classify", "auto", "dash", "owner", "settle"].forEach(function (n) { $("btn-" + n).tabIndex = n === name ? 0 : -1; }); // 탭 줄은 방향키로 옮긴다
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
     if ((name === "dash" || name === "owner") && window.Dash) { window.Dash.ensure(); } // 자료가 없으면 예시 데이터로 바로 보여 준다
@@ -308,6 +310,25 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
 
+  // 탭 접근성: 패널 역할 · 연결 · 방향키 이동
+  (function () {
+    var names = ["classify", "auto", "dash", "owner", "settle"];
+    names.forEach(function (n) {
+      var btn = $("btn-" + n), pane = $("tab-" + n);
+      btn.setAttribute("aria-controls", "tab-" + n); pane.setAttribute("role", "tabpanel"); pane.setAttribute("aria-labelledby", "btn-" + n);
+    });
+    document.querySelector(".tabs").addEventListener("keydown", function (e) {
+      var i = names.indexOf((e.target.id || "").replace("btn-", ""));
+      if (i === -1 || ["ArrowLeft", "ArrowRight", "Home", "End"].indexOf(e.key) === -1) { return; }
+      e.preventDefault();
+      var j = e.key === "Home" ? 0 : e.key === "End" ? names.length - 1 : (i + (e.key === "ArrowRight" ? 1 : names.length - 1)) % names.length;
+      $("btn-" + names[j]).focus(); showTab(names[j]);
+    });
+    // 안내: 닫으면 기억한다
+    var g = $("guide");
+    try { if (localStorage.getItem("guide-closed") === "1") { g.open = false; } } catch (e) { /* 저장이 막혀도 동작한다 */ }
+    g.addEventListener("toggle", function () { try { localStorage.setItem("guide-closed", g.open ? "0" : "1"); } catch (e) { /* 같음 */ } });
+  })();
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-auto").addEventListener("click", function () { showTab("auto"); });
   $("btn-dash").addEventListener("click", function () { showTab("dash"); });
