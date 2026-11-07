@@ -479,7 +479,7 @@
     options.forEach(function (o) { var op = el("option", "", o); op.value = o; s.appendChild(op); });
     s.value = value; return s;
   }
-  function editor(r) {
+  function editor(r, always) {
     var box = el("div", "edit");
     var sc = select(cats(), r.cat, "칸"), su = select(URGS, r.urg, "긴급도");
     function change() {
@@ -501,20 +501,17 @@
       ok.addEventListener("click", function () { r.chk = false; render(); });
       box.appendChild(ok);
     }
-    var cl = el("button", "btn plain", "닫기"); cl.type = "button";
-    cl.addEventListener("click", function () { r.editing = false; render(); });
-    box.appendChild(cl);
+    if (!always) {
+      var cl = el("button", "btn plain", "닫기"); cl.type = "button";
+      cl.addEventListener("click", function () { r.editing = false; render(); });
+      box.appendChild(cl);
+    }
     return box;
   }
   var KCLS = { "단순 문의": "s", "업무 오류": "e", "응대 문제": "r", "제도·시스템·외부": "y", "현업 팀장·팀원": "f", "확인 전": "u" };
   var EV_FAULT = { "업무 오류": 1, "응대 문제": 1 };
   function evCell(label) { var c = el("div", "ev-cell"); c.appendChild(el("span", "lab", label)); return c; }
-  function evSelect(opts, val, label, on) {
-    var s = el("select"); s.setAttribute("aria-label", label);
-    opts.forEach(function (o) { var p = el("option", "", o); p.value = o; s.appendChild(p); }); s.value = val;
-    s.addEventListener("change", function () { on(s.value); }); return s;
-  }
-  // 처리 여부 · 문의 성격 · 평가 반영을 한 줄에 (문의 성격 · 평가 반영 값은 운영 결산과 같다)
+  // 처리 여부 · 문의 성격 · 평가 반영을 한 줄에 (문의 성격 · 평가 반영 값은 운영 결산과 같다). 두 칸 아래의 «고치기»로 바로 고친다.
   function evalStrip(r) {
     var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null;
     if (!inf) { return null; }
@@ -525,26 +522,26 @@
     var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
     kc.appendChild(dot); kc.appendChild(document.createTextNode(inf.kind)); c2.appendChild(kc);
     c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
-    var kb = el("button", "ev-link", r.kindOpen ? "접기 ▴" : "성격 고치기 ▾"); kb.type = "button";
+    var kb = el("button", "ev-link", r.kindOpen ? "접기 ▴" : "고치기 ▾"); kb.type = "button";
     kb.addEventListener("click", function () { r.kindOpen = !r.kindOpen; render(); }); c2.appendChild(kb); row.appendChild(c2);
-    var c3 = evCell("평가 반영");
+    var c3 = evCell("평가 반영"), editable = !!EV_FAULT[inf.kind] || inf.over;
     if (EV_FAULT[inf.kind]) {
       c3.appendChild(el("span", "val", (inf.inc ? "반영" : "제외") + " · 중대성 " + inf.sev));
-      var ctl = el("div", "ev-ctl"), seg = el("div", "seg2");
-      [["반영", true], ["제외", false]].forEach(function (p) {
-        var b = el("button", "", p[0]); b.type = "button"; b.setAttribute("aria-pressed", String(inf.inc === p[1]));
-        b.addEventListener("click", function () { window.Settle.setEval(r, { inc: p[1] }); }); seg.appendChild(b);
-      });
-      ctl.appendChild(seg);
-      ctl.appendChild(evSelect(["상", "중", "하"], inf.sev, "귀책 중대성", function (v) { window.Settle.setEval(r, { sev: v }); }));
-      ctl.appendChild(evSelect(["완전 해결", "일부 해결", "미해결"], inf.done, "처리 완성도", function (v) { window.Settle.setEval(r, { done: v }); }));
-      c3.appendChild(ctl);
+      c3.appendChild(el("span", "sub", "처리 완성도 " + inf.done + (inf.over ? (inf.odEx ? " · 기한 넘김은 귀책 아님" : " · 기한 넘김") : "")));
+    } else if (inf.over) {
+      c3.appendChild(el("span", "val", inf.odEx ? "기한 넘김 · 귀책 아님" : "기한 넘김 · 귀책으로 세요"));
+      c3.appendChild(el("span", "sub", inf.odEx ? "점수에서 빼요" : "담당자 귀책이 아니면 고치기에서 체크해요"));
     } else {
       c3.appendChild(el("span", "val", inf.kind === "확인 전" ? "확정 전" : "해당 없음"));
-      c3.appendChild(el("span", "sub", inf.kind === "확인 전" ? "성격이 정해지면 정해져요" : "귀책이 없어서 점수에 영향이 없어요"));
+      c3.appendChild(el("span", "sub", inf.kind === "확인 전" ? "성격이 정해지면 정할 수 있어요" : "귀책이 없어서 점수에 영향이 없어요"));
+    }
+    if (editable) {
+      var eb = el("button", "ev-link", r.evalOpen ? "접기 ▴" : "고치기 ▾"); eb.type = "button";
+      eb.addEventListener("click", function () { r.evalOpen = !r.evalOpen; render(); }); c3.appendChild(eb);
     }
     row.appendChild(c3); box.appendChild(row);
     if (r.kindOpen) { box.appendChild(window.Settle.form(r)); }
+    if (r.evalOpen && editable) { box.appendChild(window.Settle.evalForm(r)); }
     return box;
   }
   // 처리 내용: 무엇을 했는지 밑에 따로 보여 주고 적을 수 있다
@@ -576,14 +573,16 @@
     if (r.edited) { t.appendChild(el("span", "chip src", "수정함")); }
     if (r.owner) { t.appendChild(el("span", "chip src", "담당 " + r.owner)); }
     if (r.src === "규칙") { t.appendChild(el("span", "chip src", "규칙으로 분류")); }
-    var ed = el("button", "edit-btn", r.editing ? "접기" : "고치기"); ed.type = "button";
-    ed.addEventListener("click", function () { r.editing = !r.editing; render(); });
-    t.appendChild(ed);
+    if (!full) {
+      var ed = el("button", "edit-btn", r.editing ? "접기" : "고치기"); ed.type = "button";
+      ed.addEventListener("click", function () { r.editing = !r.editing; render(); });
+      t.appendChild(ed);
+    }
     li.appendChild(t); li.appendChild(el("p", "", r.text));
     if (r.reason) { li.appendChild(el("p", "why", r.reason)); }
     if (r.alt) { li.appendChild(el("p", "why alt", "두 번째 분류는 " + r.alt.cat + " / " + r.alt.urg + "였어요. 사람이 확인해 주세요.")); }
     if (r.edited) { li.appendChild(el("p", "why", "AI 분류: " + r.aiCat + " / " + r.aiUrg)); }
-    if (r.editing) { li.appendChild(editor(r)); }
+    if (r.editing || full) { li.appendChild(editor(r, full)); }
     if (full) { var ev = evalStrip(r); if (ev) { li.appendChild(ev); } }
     li.appendChild(stepper(r));
     if (full) { li.appendChild(noteBox(r)); }
