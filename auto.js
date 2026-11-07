@@ -47,6 +47,13 @@
     });
     return best;
   }
+  // 문의의 카테고리(칸)를 바꾸는 선택 칸 (자동응답으로 처리하기 어려운 문의를 다른 카테고리로 보낼 때)
+  function catPicker(r) {
+    var row = el("label", "acatrow", "카테고리"), s = el("select", "acat"); s.setAttribute("aria-label", "문의 카테고리 바꾸기");
+    siteCats().forEach(function (c) { var o = el("option", "", c); o.value = c; s.appendChild(o); }); s.value = r.cat;
+    s.addEventListener("change", function () { if (window.Dash && window.Dash.setCat) { window.Dash.setCat(r, s.value); } render(); });
+    row.appendChild(s); return row;
+  }
   function changed() { save(); if (window.Dash && window.Dash.refresh) { window.Dash.refresh(); } render(); }
 
   function card(a, cnt) {
@@ -93,7 +100,7 @@
       var li = el("li"), t = el("div", "t");
       t.appendChild(el("span", "chip", r.cat)); t.appendChild(el("span", "chip src", "자동응답 · " + r.auto));
       if (r.stamps[3]) { t.appendChild(el("span", "chip", "처리 " + r.stamps[3].slice(5))); }
-      li.appendChild(t); li.appendChild(el("p", "", r.text)); li.appendChild(el("p", "why", r.note || "")); ul.appendChild(li);
+      li.appendChild(t); li.appendChild(el("p", "", r.text)); li.appendChild(el("p", "why", r.note || "")); li.appendChild(catPicker(r)); ul.appendChild(li);
     });
     // 담당자가 확인해 답변을 더할 문의: 단순 문의인데 맞는 답변이 없는 것
     var need = rows.filter(function (r) {
@@ -109,7 +116,7 @@
       li.appendChild(t); li.appendChild(el("p", "", r.text));
       var b = el("button", "alink add", "이 문의로 답변 만들기"); b.type = "button";
       b.addEventListener("click", function () { addAnswer(r.cat, r.text.slice(0, 14)); var box = $("a-list"); if (box && box.scrollIntoView) { box.scrollIntoView({ behavior: "smooth", block: "start" }); } });
-      li.appendChild(b); nl.appendChild(li);
+      li.appendChild(catPicker(r)); li.appendChild(b); nl.appendChild(li);
     });
     if (need.length > 12) { nl.appendChild(el("li", "empty", "나머지 " + (need.length - 12) + "건은 답변을 만들면 줄어들어요.")); }
     // 답변 목록: 카테고리별로 묶어서
