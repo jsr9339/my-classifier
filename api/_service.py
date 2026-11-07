@@ -25,7 +25,7 @@ def handle_classify(raw_body):
         pass
     else:
         if not _limit.configured():
-            return 503, {"오류": "한도 저장소(Upstash)가 이 배포에 연결되지 않았습니다", "종류": "한도장치미설정"}
+            return 503, {"오류": "사용 횟수를 세는 장치를 쓸 수 없습니다", "종류": "한도장치미설정"}
         try:
             verdict, used, limit = _limit.count_and_check()
         except Exception as e:
@@ -35,7 +35,7 @@ def handle_classify(raw_body):
         if verdict == "분당":
             return 429, {"오류": "요청이 몰렸어요. 몇 초 뒤에 다시 눌러 주세요.", "종류": "분당"}
         if verdict == "하루":
-            return 429, {"오류": "오늘 사용 한도(%d회)에 도달했어요. 내일 다시 써 주세요." % limit, "종류": "한도"}
+            return 429, {"오류": "오늘 사용할 수 있는 횟수를 모두 썼어요. 내일 다시 써 주세요.", "종류": "한도"}
 
     try:
         res = _core.classify_text(text)
