@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="style.css?v=1f87702e">
-<link rel="stylesheet" href="settle.css?v=1f87702e">
+<link rel="stylesheet" href="style.css?v=45cccbbe">
+<link rel="stylesheet" href="settle.css?v=45cccbbe">
 </head>
 <body>
 <div class="page wide">
@@ -21,6 +21,7 @@
   <main class="sheet">
     <div class="tabs" role="tablist">
       <button type="button" id="btn-classify" role="tab" aria-selected="true">분류·채점</button>
+      <button type="button" id="btn-auto" role="tab" aria-selected="false">자동응답</button>
       <button type="button" id="btn-owner" role="tab" aria-selected="false">담당자별</button>
       <button type="button" id="btn-dash" role="tab" aria-selected="false">운영 현황</button>
       <button type="button" id="btn-settle" role="tab" aria-selected="false">운영 결산</button>
@@ -115,6 +116,23 @@
       </div>
     </section>
     </div>
+
+    <section id="tab-auto" hidden>
+      <div class="dpanel">
+        <h2>자동응답 <small id="a-sum"></small></h2>
+        <label class="opt"><input type="checkbox" id="a-on" checked><span>문의 성격이 «단순 문의»이면 자동응답으로 처리<small>(맞는 답변이 있을 때만 · 처리 완료로 바꾸고 처리 내용에 답변을 남겨요)</small></span></label>
+        <p class="fine">처음 들어 있는 답변은 예시예요. 회사의 실제 안내에 맞게 고쳐 쓰세요. 맞는 답변이 없으면 담당자가 직접 답해요. 담당자별 탭의 문의 카드에서 «자동응답 취소»로 되돌릴 수 있어요.</p>
+      </div>
+      <div class="dpanel">
+        <h2>답변 목록 <small>낱말이 맞는 문의에 이 답변을 붙여요</small></h2>
+        <div class="alist" id="a-list"></div>
+        <div class="btns"><button type="button" id="a-add" class="btn plain">답변 추가</button><button type="button" id="a-reset" class="btn plain">처음 답변으로 되돌리기</button></div>
+      </div>
+      <div class="dpanel">
+        <h2>자동응답으로 처리한 문의 <small>최근 것부터</small></h2>
+        <ul class="items" id="a-done"></ul>
+      </div>
+    </section>
 
     <section id="tab-dash" hidden>
       <p id="d-fail" class="hint" hidden></p>
@@ -325,10 +343,11 @@
 
   </main>
 </div>
-<script src="mask.js?v=1f87702e"></script>
-<script src="rules.js?v=1f87702e"></script>
-<script src="app.js?v=1f87702e"></script>
-<script src="dashboard.js?v=1f87702e"></script>
-<script src="settle.js?v=1f87702e"></script>
+<script src="mask.js?v=45cccbbe"></script>
+<script src="rules.js?v=45cccbbe"></script>
+<script src="app.js?v=45cccbbe"></script>
+<script src="dashboard.js?v=45cccbbe"></script>
+<script src="auto.js?v=45cccbbe"></script>
+<script src="settle.js?v=45cccbbe"></script>
 </body>
 </html>

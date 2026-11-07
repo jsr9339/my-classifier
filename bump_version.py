@@ -5,7 +5,7 @@
 import hashlib
 import re
 
-FILES = ["mask.js", "rules.js", "app.js", "dashboard.js", "settle.js", "style.css", "settle.css"]
+FILES = ["mask.js", "rules.js", "app.js", "dashboard.js", "auto.js", "settle.js", "style.css", "settle.css"]
 h = hashlib.sha1()
 for f in FILES:
     h.update(open(f, "rb").read().replace(b"\r\n", b"\n"))

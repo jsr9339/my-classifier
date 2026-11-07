@@ -16,12 +16,13 @@
 
   var HERO = {
     classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
+    auto: ["단순 문의는 자동으로 답해요", '<span class="b">사내 의견함</span><br>자동응답'],
     dash: ["의견함 한눈에 보기", '<span class="b">사내 의견함</span><br>운영 현황'],
     owner: ["담당자별로 확인하기", '<span class="b">담당자별</span><br>응대 현황'],
     settle: ["팀별/팀원별 KPI 달성도 확인", '<span class="b">사내 의견함</span><br>운영 결산']
   };
   function showTab(name) {
-    ["classify", "dash", "owner", "settle"].forEach(function (n) {
+    ["classify", "auto", "dash", "owner", "settle"].forEach(function (n) {
       $("tab-" + n).hidden = n !== name;
       $("btn-" + n).setAttribute("aria-selected", String(n === name));
     });
@@ -29,7 +30,7 @@
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
     if ((name === "dash" || name === "owner") && window.Dash) { window.Dash.ensure(); } // 자료가 없으면 예시 데이터로 바로 보여 준다
-    if ((name === "settle" || name === "owner" || name === "dash") && window.Dash) { window.Dash.ensure().then(function () { if (window.Settle) { window.Settle.render({ follow: name === "owner" }); } }); } // 문의 성격 보기를 위해 운영 현황도 준비한다
+    if ((name === "settle" || name === "owner" || name === "dash" || name === "auto") && window.Dash) { window.Dash.ensure().then(function () { if (window.Settle) { window.Settle.render({ follow: name === "owner" }); } if (name === "auto" && window.Auto) { window.Auto.render(); } }); } // 문의 성격 보기를 위해 운영 현황도 준비한다
   }
 
   function classifyRaw(raw) {
@@ -308,6 +309,7 @@
   }
 
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
+  $("btn-auto").addEventListener("click", function () { showTab("auto"); });
   $("btn-dash").addEventListener("click", function () { showTab("dash"); });
   $("btn-owner").addEventListener("click", function () { showTab("owner"); });
   $("btn-settle").addEventListener("click", function () { showTab("settle"); });

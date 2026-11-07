@@ -89,6 +89,7 @@
     if (si === -1 && /^[0-3]$/.test(st)) { si = +st; }
     if (si !== -1) { r.step = si; }
     r.stamps[1] = validDate(x.asg); r.stamps[2] = validDate(x.doing); r.stamps[3] = validDate(x.done);
+    r.auto = (x.auto || "").trim().slice(0, 40); // 자동응답으로 처리했으면 그 답변 이름
     r.note = (x.note || "").trim().slice(0, 300); // 처리 내용: 무엇을 했는지 적은 글
     r.owner = (x.owner || "").trim().slice(0, 20); // 칸의 담당자와 다르게 직접 고른 담당자(없으면 칸을 따른다)
     return r;
@@ -112,7 +113,7 @@
     var di = colIndex(head, ["날짜", "접수일", "date"]);
     var ix = { cat: colIndex(head, ["칸"]), urg: colIndex(head, ["긴급도"]), reason: colIndex(head, ["이유"]), chk: colIndex(head, ["사람확인"]),
       step: colIndex(head, ["단계"]), asg: colIndex(head, ["배정일"]), doing: colIndex(head, ["처리시작일"]), done: colIndex(head, ["완료일"]),
-      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]), note: colIndex(head, ["처리내용"]) };
+      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]), note: colIndex(head, ["처리내용"]), auto: colIndex(head, ["자동응답"]) };
     var out = [];
     table.slice(1).forEach(function (c) {
       var raw = (c[ti] || "").trim();
@@ -464,9 +465,26 @@
     });
   }
   function setStep(r, k) {
+    if (r.auto && k !== 3) { r.auto = ""; r.autoOff = true; r.autoPrev = null; } // 손으로 단계를 바꾸면 자동응답 처리는 풀린다
     var t = dstr(todayDate());
     for (var i = 1; i < 4; i++) { if (i <= k) { if (!r.stamps[i]) { r.stamps[i] = t; } } else { r.stamps[i] = ""; } }
     r.step = k;
+  }
+  // 자동응답: 문의 성격이 «단순 문의»이고 자동응답 답변과 맞으면 처리 완료로 바꾸고, 처리 내용에 답변을 남긴다
+  function applyAuto() {
+    if (!window.Auto || !window.Auto.on() || !window.Settle || !window.Settle.info) { return; }
+    ROWS.forEach(function (r) {
+      if (r.auto || r.autoOff || r.step === 3) { return; }
+      var inf = window.Settle.info(r); if (!inf || inf.kind !== "단순 문의") { return; }
+      var m = window.Auto.match(r.text); if (!m) { return; }
+      r.autoPrev = { step: r.step, stamps: r.stamps.slice(), note: r.note || "" };
+      setStep(r, 3); r.note = ("[자동응답] " + m.text).slice(0, 300); r.auto = m.name;
+    });
+  }
+  function undoAuto(r) {
+    var p = r.autoPrev;
+    if (p) { r.step = p.step; r.stamps = p.stamps; r.note = p.note; }
+    r.auto = ""; r.autoOff = true; r.autoPrev = null;
   }
   function stepper(r) {
     var s = el("div", "step"); s.setAttribute("role", "group"); s.setAttribute("aria-label", "처리 단계");
@@ -588,6 +606,11 @@
       bt.appendChild(sv); bt.appendChild(cn); box.appendChild(bt);
     } else if (r.note) { box.appendChild(el("p", "nt", r.note)); }
     else { box.appendChild(el("p", "nt empty", "아직 적은 내용이 없어요")); }
+    if (r.auto) {
+      var ab = el("div", "ev-ctl"); ab.appendChild(el("span", "sub3", "자동응답으로 처리됐어요 · " + r.auto));
+      var cb = el("button", "ev-link", "자동응답 취소"); cb.type = "button";
+      cb.addEventListener("click", function () { undoAuto(r); render(); }); ab.appendChild(cb); box.appendChild(ab);
+    }
     return box;
   }
   function itemLi(r, full) {
@@ -599,6 +622,7 @@
     if (isOverdue(r)) { t.appendChild(el("span", "chip over", "접수 후 " + recvAge(r) + "일")); }
     if (r.edited) { t.appendChild(el("span", "chip src", "수정함")); }
     if (r.owner) { t.appendChild(el("span", "chip src", "담당 " + r.owner)); }
+    if (r.auto) { t.appendChild(el("span", "chip src", "자동응답")); }
     if (r.src === "규칙") { t.appendChild(el("span", "chip src", "규칙으로 분류")); }
     if (!full) {
       var ed = el("button", "edit-btn", r.editing ? "접기" : "고치기"); ed.type = "button";
@@ -662,6 +686,7 @@
     });
   }
   function render() {
+    applyAuto();
     var v = viewOf();
     renderPeriod(); renderTiles(v); renderFilters(v); renderItems(v); renderBars(v); renderAssign(v); renderOwner();
     $("d-down2").disabled = !ROWS.some(function (r) { return r.edited; });
@@ -711,10 +736,10 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function download() {
-    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자", "처리내용"];
+    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자", "처리내용", "자동응답"];
     var lines = [head.join(",")].concat(ROWS.map(function (r) {
       return [r.date || (r.y + "-" + pad(r.m)), r.text, r.cat, r.urg, r.reason || "", r.chk ? "예" : "", r.sens ? "예" : "", STEPS[r.step],
-        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || "", r.note || ""].map(csvCell).join(",");
+        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || "", r.note || "", r.auto || ""].map(csvCell).join(",");
     }));
     saveCSV(lines, "의견함_분류결과.csv");
   }
