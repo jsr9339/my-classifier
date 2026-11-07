@@ -201,16 +201,22 @@
     var rows = [], max = 1;
     for (var mm = 1; mm <= 12; mm++) {
       var list = ROWS.filter(function (r) { return r.y === SEL.y && r.m === mm; });
-      var t = list.length, h = list.filter(function (r) { return r.urg === "높음"; }).length;
-      rows.push([mm, t, h]); if (t > max) { max = t; }
+      var t = list.length;
+      var h = list.filter(function (r) { return r.urg === "높음"; }).length, mid = list.filter(function (r) { return r.urg === "보통"; }).length;
+      rows.push([mm, t, h, mid, t - h - mid]); if (t > max) { max = t; }
     }
     rows.forEach(function (r) {
       var b = el("button", "tcol"); b.type = "button";
       b.setAttribute("aria-pressed", String(SEL.m === r[0])); b.disabled = !r[1];
-      b.setAttribute("aria-label", r[1] ? SEL.y + "년 " + r[0] + "월 " + r[1] + "건, 긴급 높음 " + r[2] + "건" : r[0] + "월 자료 없음");
+      b.setAttribute("aria-label", r[1] ? SEL.y + "년 " + r[0] + "월 " + r[1] + "건, 높음 " + r[2] + " 보통 " + r[3] + " 낮음 " + r[4] : r[0] + "월 자료 없음");
       b.appendChild(el("span", "tnum", r[1] ? String(r[1]) : ""));
       var bar = el("span", "tbar"); bar.style.height = r[1] ? Math.max(6, r[1] / max * 80) + "px" : "3px";
-      if (r[1]) { var hot = el("i"); hot.style.height = (r[2] / r[1] * 100) + "%"; bar.appendChild(hot); } else { bar.classList.add("none"); }
+      if (r[1]) {
+        [["h", r[2]], ["m", r[3]], ["l", r[4]]].forEach(function (p) {
+          if (!p[1]) { return; }
+          var seg = el("i", p[0]); seg.style.height = (p[1] / r[1] * 100) + "%"; bar.appendChild(seg);
+        });
+      } else { bar.classList.add("none"); }
       b.appendChild(bar); b.appendChild(el("span", "tmo", r[0] + "월"));
       b.addEventListener("click", function () { SEL.m = r[0]; SEL.filter = "전체"; SEL.all = false; render(); });
       tr.appendChild(b);
