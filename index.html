@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사내 만족도 분류기</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>사내 만족도 분류기</h1>
+  <p class="sub">문장 한 줄을 넣으면 칸과 긴급도를 AI(Gemini)가 가려 줍니다. 결과는 추정이에요.</p>
+  <p class="notice">실제 회사 · 개인 정보는 넣지 마세요.</p>
+  <p id="status" class="status" role="status"></p>
+
+  <div class="tabs" role="tablist">
+    <button type="button" id="btn-classify" role="tab" aria-selected="true">분류</button>
+    <button type="button" id="btn-grade" role="tab" aria-selected="false">채점</button>
+  </div>
+
+  <section id="tab-classify">
+    <label for="input">문장 한 줄</label>
+    <textarea id="input" rows="3" placeholder="예: 비상구 앞에 박스가 쌓여 있어요"></textarea>
+    <div class="row">
+      <button type="button" id="run" class="primary">분류하기</button>
+      <button type="button" id="sample">연습 문장 불러오기</button>
+    </div>
+    <div id="result" class="card" hidden>
+      <p class="masked-line"><span class="k">가린 문장</span> <span id="masked"></span></p>
+      <p><span class="k">칸</span> <strong id="r-cat"></strong></p>
+      <p><span class="k">긴급도</span> <strong id="r-urg"></strong></p>
+      <p><span class="k">이유</span> <span id="r-why"></span></p>
+      <p><span class="k">판단 방식</span> <span id="r-how"></span></p>
+      <p id="r-warn" class="warn" hidden>사람이 확인하세요</p>
+    </div>
+  </section>
+
+  <section id="tab-grade" hidden>
+    <p>정답 30개로 규칙의 점수를 잽니다.</p>
+    <button type="button" id="grade" class="primary">규칙으로 채점</button>
+    <div id="grade-result" hidden>
+      <div class="card">
+        <p><span class="k">칸 맞은 수</span> <strong id="g-cat"></strong></p>
+        <p><span class="k">긴급도 맞은 수</span> <strong id="g-urg"></strong></p>
+        <p><span class="k">둘 다 맞은 수</span> <strong id="g-both"></strong></p>
+        <p><span class="k">가장 나쁜 실수</span> <strong id="g-worst"></strong></p>
+        <ul id="g-worst-list" class="plain"></ul>
+      </div>
+      <h2>틀린 문장</h2>
+      <ul id="g-wrong" class="wrong"></ul>
+    </div>
+  </section>
+</main>
+<script src="mask.js"></script>
+<script src="rules.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
