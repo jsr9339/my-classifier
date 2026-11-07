@@ -704,10 +704,18 @@
 
   function periodLabel() { return SEL.m ? SEL.y + "년 " + SEL.m + "월" : SEL.y + "년 전체"; }
   // 담당자별 탭은 달을 여러 개 체크해서 합쳐 볼 수 있다(누적). 아무것도 체크하지 않으면 연 전체.
-  function inOwnerPeriod(r) { return r.y === SEL.y && (!OSEL.ms || !OSEL.ms.length || OSEL.ms.indexOf(r.m) !== -1); }
+  function haveMonths() { return Object.keys(monthSet(SEL.y)).map(Number).sort(function (x, y) { return x - y; }); }
+  // 체크한 달을 자료가 있는 달로 맞춘다. 하나도 없으면 «연 전체»(자료가 있는 모든 달)로 본다.
+  function normMs() {
+    var have = haveMonths();
+    if (!OSEL.ms) { OSEL.ms = SEL.m ? [SEL.m] : []; }
+    OSEL.ms = OSEL.ms.filter(function (x) { return have.indexOf(x) !== -1; });
+    if (!OSEL.ms.length) { OSEL.ms = have.slice(); }
+  }
+  function inOwnerPeriod(r) { return r.y === SEL.y && OSEL.ms.indexOf(r.m) !== -1; }
   function ownerPeriodLabel() {
-    var ms = (OSEL.ms || []).slice().sort(function (x, y) { return x - y; });
-    if (!ms.length) { return SEL.y + "년 전체"; }
+    var ms = OSEL.ms.slice().sort(function (x, y) { return x - y; });
+    if (ms.length === haveMonths().length) { return SEL.y + "년 전체"; }
     if (ms.length === 1) { return SEL.y + "년 " + ms[0] + "월"; }
     var run = ms[ms.length - 1] - ms[0] === ms.length - 1;
     return SEL.y + "년 " + (run ? ms[0] + "~" + ms[ms.length - 1] + "월" : ms.join(" · ") + "월") + " 누적";
@@ -765,15 +773,14 @@
       SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render();
     };
     var have = monthSet(SEL.y), box = $("o-months"); box.textContent = "";
-    if (!OSEL.ms) { OSEL.ms = SEL.m ? [SEL.m] : []; }
-    OSEL.ms = OSEL.ms.filter(function (x) { return have[x]; });
+    var nAll = haveMonths().length;
     for (var m = 0; m <= 12; m++) {
       (function (m) {
         var b = el("button", "", m === 0 ? "연 전체" : m + "월"); b.type = "button";
-        var on = m === 0 ? !OSEL.ms.length : OSEL.ms.indexOf(m) !== -1;
+        var on = m === 0 ? OSEL.ms.length === nAll : OSEL.ms.indexOf(m) !== -1;
         b.setAttribute("aria-pressed", String(on)); b.disabled = m !== 0 && !have[m];
         b.addEventListener("click", function () {
-          if (m === 0) { OSEL.ms = []; }
+          if (m === 0) { OSEL.ms = haveMonths(); }
           else if (on) { OSEL.ms = OSEL.ms.filter(function (x) { return x !== m; }); }
           else { OSEL.ms = OSEL.ms.concat([m]); }
           OSEL.all = false; renderOwner();
@@ -869,6 +876,7 @@
     var has = ROWS.length > 0;
     $("o-empty").hidden = has; $("o-main").hidden = !has;
     if (!has) { return; }
+    normMs();
     var rows = ROWS.filter(inOwnerPeriod), groups = ownerGroups(rows);
     if (OSEL.name !== ALL && !groups.some(function (g) { return g.name === OSEL.name; })) { OSEL.name = groups.length ? groups[0].name : ""; }
     $("o-sub").textContent = ownerPeriodLabel();
