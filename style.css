@@ -232,10 +232,9 @@ table.prev th { color: var(--muted); font-weight: 700; }
 .dpanel.my { margin-top: 22px; }
 .dpanel.my .card { margin: 8px 0; }
 
-/* 먼저 볼 문장의 걸러 보기 줄은 한 줄에 다 보이게 한다 (좁으면 그 줄만 옆으로 민다) */
-.filters .frow, .terms.frow { gap: 6px; }
-.filters .flab, .terms .flab { width: 68px; font-size: 12px; line-height: 1.3; white-space: nowrap; }
-.filters .fchips, .terms .fchips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1; }
-.filters .fchips::-webkit-scrollbar, .terms .fchips::-webkit-scrollbar { display: none; }
-.filters .fchips button, .terms .fchips button { font-size: 12px; padding: 3px 8px; }
-.terms.frow { margin-bottom: 8px; }
+/* 먼저 볼 문장의 걸러 보기: 제목은 위에, 단추는 아래에 두고 칸 밖으로 나가지 않게 한다 */
+.filters .frow, .terms.frow { flex-direction: column; align-items: stretch; gap: 4px; }
+.filters .flab, .terms .flab { width: auto; font-size: 12px; line-height: 1.3; }
+.filters .fchips, .terms .fchips { flex-wrap: wrap; overflow: visible; gap: 5px; }
+.filters .fchips button, .terms .fchips button { font-size: 11.5px; padding: 3px 8px; }
+.terms.frow { margin-bottom: 10px; }

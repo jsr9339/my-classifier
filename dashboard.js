@@ -411,6 +411,8 @@
       chips.appendChild(b);
     });
     box.appendChild(chips);
+    // 한 줄에 들어가지 않는 낱말은 뺀다 (칸 밖으로 나가지 않게)
+    while (chips.children.length > 1 && chips.lastChild.offsetTop > chips.firstChild.offsetTop + 2) { chips.removeChild(chips.lastChild); }
   }
   function renderFilters(v) {
     var box = $("d-filters"); box.textContent = "";
