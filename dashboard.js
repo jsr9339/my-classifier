@@ -532,10 +532,10 @@
       c1b.appendChild(el("span", "val", n + "일"));
       var scale = el("div", "pace"), cur = n <= 1 ? 0 : n <= OVERDUE ? 1 : 2;
       [["빠름", "1일"], ["보통", OVERDUE + "일"], ["기한 넘김", OVERDUE + "일 초과"]].forEach(function (p, i) {
-        var s = el("span", "p" + i + (i === cur ? " on" : ""), p[0] + " " + p[1]); s.title = p[0] + " (" + p[1] + ")"; scale.appendChild(s);
+        var s = el("span", "p" + i + (i === cur ? " on" : ""), p[0]); s.title = p[0] + " (" + p[1] + ")"; scale.appendChild(s);
       });
       c1b.appendChild(scale);
-      c1b.appendChild(el("span", "sub", "접수 " + r.date.slice(5) + (done ? " → 완료 " + r.stamps[3].slice(5) : " → 오늘")));
+      c1b.appendChild(el("span", "sub", "접수 " + r.date.slice(5) + " → " + (done ? r.stamps[3] : dstr(todayDate())).slice(5)));
     }
     row.appendChild(c1b);
     var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
