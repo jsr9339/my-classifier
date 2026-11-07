@@ -142,6 +142,7 @@
   }
   // 카테고리 필터: 칩을 눌러 체크 · 해제하고, 체크한 카테고리의 문의만 보여 준다 (null = 모두)
   var FLT = { list: null, status: "all" };
+  var TABSEL = "전체"; // 답변 목록에서 보고 있는 카테고리 탭
   function pass(key, r) { return FLT[key] === null || FLT[key].indexOf(r.cat) !== -1; }
   function filterBar(box, key, list) {
     box.textContent = "";
@@ -185,12 +186,12 @@
   function addAnswer(cat, name) {
     ST.seq = (ST.seq || ST.list.length) + 1;
     var a = { id: "a" + ST.seq, cat: cat || COMMON, name: name || "새 답변", keys: "", text: "" };
-    ST.list.push(a); save(); render(); return a;
+    ST.list.push(a); TABSEL = a.cat; save(); render(); return a;
   }
   function addCat(name) {
     name = String(name || "").trim().slice(0, 12);
     if (!name || name === COMMON || cats().indexOf(name) !== -1) { return false; }
-    ST.cats.push(name); save(); render(); return true;
+    ST.cats.push(name); TABSEL = name; save(); render(); return true;
   }
 
   function render() {
@@ -218,24 +219,49 @@
     else if (!shown.length) { ul.appendChild(el("li", "empty", "체크한 조건의 문의가 없어요.")); }
     shown.slice(0, 20).forEach(function (r) { ul.appendChild(item(r)); });
     if (shown.length > 20) { ul.appendChild(el("li", "empty", "나머지 " + (shown.length - 20) + "건은 위의 체크로 좁혀서 보세요.")); }
-    // 답변 목록: 카테고리별로 묶어서
+    // 답변 목록: 카테고리 탭을 누르면 그 카테고리에 어떤 자동응답 답변이 있는지 보여 준다
     var box = $("a-list"); box.textContent = "";
-    cats().concat([COMMON]).forEach(function (c) {
-      var mine = ST.list.filter(function (a) { return (a.cat || COMMON) === c; });
-      var grp = el("div", "agrp"), head = el("div", "agh");
-      head.appendChild(el("b", "", c)); head.appendChild(el("span", "agn", mine.length + "개"));
+    var all = cats().concat([COMMON]);
+    if (TABSEL !== "전체" && all.indexOf(TABSEL) === -1) { TABSEL = "전체"; } // 지운 카테고리를 보고 있었다면 전체로
+    var bar = el("div", "afbar"); bar.setAttribute("role", "tablist");
+    [["전체", ST.list.length]].concat(all.map(function (c) { return [c, ST.list.filter(function (a) { return (a.cat || COMMON) === c; }).length]; })).forEach(function (p) {
+      var b = el("button", "", p[0] + " " + p[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-pressed", String(TABSEL === p[0]));
+      b.addEventListener("click", function () { TABSEL = p[0]; render(); }); bar.appendChild(b);
+    });
+    box.appendChild(bar);
+    if (TABSEL === "전체") {
+      // 한눈에: 카테고리마다 어떤 답변이 있는지 (고치려면 카테고리 탭을 눌러요)
+      all.forEach(function (c) {
+        var mine = ST.list.filter(function (a) { return (a.cat || COMMON) === c; });
+        if (!mine.length) { return; }
+        var grp = el("div", "agrp"), head = el("div", "agh");
+        head.appendChild(el("b", "", c)); head.appendChild(el("span", "agn", mine.length + "개"));
+        var go = el("button", "alink add", "고치기"); go.type = "button"; go.addEventListener("click", function () { TABSEL = c; render(); }); head.appendChild(go);
+        grp.appendChild(head);
+        mine.forEach(function (a) {
+          var row = el("div", "asum"); row.appendChild(el("b", "", a.name));
+          row.appendChild(el("span", "ak", a.keys ? "낱말: " + a.keys : "낱말 없음"));
+          row.appendChild(el("span", "at", a.text || "(답변 글이 비어 있어요)")); grp.appendChild(row);
+        });
+        box.appendChild(grp);
+      });
+      if (!ST.list.length) { box.appendChild(el("p", "fine", "등록된 답변이 없어요. 카테고리 탭에서 «+ 답변 추가»로 만들어 보세요.")); }
+    } else {
+      var c = TABSEL, mine2 = ST.list.filter(function (a) { return (a.cat || COMMON) === c; });
+      var grp2 = el("div", "agrp"), head2 = el("div", "agh");
+      head2.appendChild(el("b", "", c + " 자동응답 답변")); head2.appendChild(el("span", "agn", mine2.length + "개"));
       var add = el("button", "alink add", "+ 답변 추가"); add.type = "button"; add.addEventListener("click", function () { addAnswer(c); });
-      head.appendChild(add);
+      head2.appendChild(add);
       if (siteCats().indexOf(c) === -1 && c !== COMMON) {
         var dc = el("button", "alink", "카테고리 지우기"); dc.type = "button"; dc.title = "이 카테고리의 답변은 «공통»으로 옮겨요";
         dc.addEventListener("click", function () { ST.cats = ST.cats.filter(function (x) { return x !== c; }); ST.list.forEach(function (x) { if (x.cat === c) { x.cat = COMMON; } }); changed(); });
-        head.appendChild(dc);
+        head2.appendChild(dc);
       }
-      grp.appendChild(head);
-      if (!mine.length) { grp.appendChild(el("p", "fine", "등록된 답변이 없어요.")); }
-      mine.forEach(function (a) { grp.appendChild(card(a, cnt)); });
-      box.appendChild(grp);
-    });
+      grp2.appendChild(head2);
+      if (!mine2.length) { grp2.appendChild(el("p", "fine", "이 카테고리에는 등록된 답변이 없어요. «+ 답변 추가»로 만들어 보세요.")); }
+      mine2.forEach(function (a) { grp2.appendChild(card(a, cnt)); });
+      box.appendChild(grp2);
+    }
   }
 
   $("a-add").addEventListener("click", function () { addAnswer(COMMON); });
