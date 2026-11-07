@@ -231,26 +231,39 @@
       prog.hidden = false; prog.textContent = "AI 채점 중... 0 / " + n;
       setStatus("");
 
-      // 무료 구간은 분당 15회까지라서 5.2초에 한 번씩 천천히 부른다.
-      var GAP = 5200;
+      // 10개씩 묶어서 보낸다. 무료 구간은 분당 15회까지라서 5.2초에 한 번씩만 부른다.
+      var GAP = 5200, BATCH = 10;
       var results = new Array(n), done = 0, abort = "";
       function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-      function one(i, tries) {
-        return callAI(answers[i].text).then(function (res) {
-          results[i] = res;
-        }).catch(function (e) {
-          if (e.kind === "분당" && tries < 4) { return sleep(8000).then(function () { return one(i, tries + 1); }); }
-          if (e.kind === "한도" || e.kind === "분당" || e.kind === "한도장치미설정" || e.kind === "한도장치오류") { abort = e.message; }
-          else { results[i] = null; }
+      function callBatch(texts) {
+        return fetch("api/classify", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ texts: texts.map(function (t) { return Mask.maskText(t); }) })
+        }).then(function (r) {
+          return r.json().then(function (data) {
+            if (!r.ok) { var err = new Error(data["오류"] || "AI를 쓸 수 없어요"); err.kind = data["종류"] || ""; throw err; }
+            return data;
+          });
         });
       }
-      function loop(i) {
-        if (abort || i >= n) { return Promise.resolve(); }
+      function one(k, tries) {
+        var start = k * BATCH, chunk = answers.slice(start, start + BATCH);
+        return callBatch(chunk.map(function (a) { return a.text; })).then(function (data) {
+          var out = data["결과"] || [];
+          chunk.forEach(function (a, j) { results[start + j] = out[j] || null; });
+        }).catch(function (e) {
+          if (e.kind === "분당" && tries < 4) { return sleep(8000).then(function () { return one(k, tries + 1); }); }
+          if (e.kind === "한도" || e.kind === "분당" || e.kind === "한도장치미설정" || e.kind === "한도장치오류") { abort = e.message; }
+          else { chunk.forEach(function (a, j) { results[start + j] = null; }); }
+        });
+      }
+      function loop(k) {
+        if (abort || k * BATCH >= n) { return Promise.resolve(); }
         var started = Date.now();
-        return one(i, 0).then(function () {
-          done++; prog.textContent = "AI 채점 중... " + done + " / " + n;
+        return one(k, 0).then(function () {
+          done = Math.min(n, (k + 1) * BATCH); prog.textContent = "AI 채점 중... " + done + " / " + n;
           return sleep(Math.max(GAP - (Date.now() - started), 0));
-        }).then(function () { return loop(i + 1); });
+        }).then(function () { return loop(k + 1); });
       }
       return loop(0).then(function () {
         btn.disabled = false; $("btn-score").disabled = false;
@@ -264,10 +277,10 @@
           var ai = computeStats(answers, results, "AI");
           var used = results.filter(Boolean).length, models = {}, prompts = {};
           results.forEach(function (r) { if (r) { models[r["모델"]] = (models[r["모델"]] || 0) + 1; prompts[r["지시문"] || "?"] = true; } });
-          var cond = "조건: 모델 " + Object.keys(models).map(function (m) { return m + " " + models[m] + "회"; }).join(", ")
+          var cond = "조건: 모델 " + Object.keys(models).map(function (m) { return m + " " + models[m] + "문장"; }).join(", ")
             + " · 지시문 " + Object.keys(prompts).join(",")
             + " · 기준 criteria.json version " + criteria["version"]
-            + " · 1회 채점 · AI 호출 " + n + "회 사용" + (ai.failed ? " · 호출 실패 " + ai.failed + "개(틀린 것으로 셈)" : "");
+            + " · 1회 채점 · 10개씩 묶어 AI " + Math.ceil(n / BATCH) + "회 호출" + (ai.failed ? " · 호출 실패 " + ai.failed + "개(틀린 것으로 셈)" : "");
           lastAI = { cond: cond, rule: rule, ai: ai, date: new Date().toISOString() };
           renderCompare(rule, ai, cond);
         });
