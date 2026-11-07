@@ -780,7 +780,8 @@
   // 같은 이름을 적은 칸들은 한 사람으로 묶는다. 예시 데이터일 때만 이름이 미리 들어 있다.
   var DEMO = { "급여": "도하준", "복지": "윤지안", "조직문화": "배서윤", "리더십": "남도윤", "안전보건": "문세아", "온보딩": "노이든", "평가": "류하린", "기타": "문세아" };
   var UNASSIGNED = "담당자 미지정", ALL = "전체 보기"; // ALL: 담당자 전체를 한 번에 보는 카드
-  var OFILTERS = ["처리 안 된 것", "전체", "긴급 높음", "기한 넘김", "사람 확인", "민감"];
+  var OFILTERS = ["전체", "처리 완료", "처리 중", "담당자 배정", "접수"], OSTEP = { "처리 완료": 3, "처리 중": 2, "담당자 배정": 1, "접수": 0 };
+  function stateMatch(r, f) { return f === "전체" || r.step === OSTEP[f]; }
 
   function periodLabel() { return SEL.m ? SEL.y + "년 " + SEL.m + "월" : SEL.y + "년 전체"; }
   // 담당자별 탭은 달을 여러 개 체크해서 합쳐 볼 수 있다(누적). 아무것도 체크하지 않으면 연 전체.
@@ -832,15 +833,7 @@
     list.sort(function (a, b) { return (b.over - a.over) || (b.hi - a.hi) || (b.open - a.open) || (a.name < b.name ? -1 : 1); });
     return list;
   }
-  function ownerFilter(r) {
-    var f = OSEL.filter;
-    if (f === "처리 안 된 것") { return r.step < 3; }
-    if (f === "긴급 높음") { return r.urg === "높음"; }
-    if (f === "기한 넘김") { return isOverdue(r); }
-    if (f === "사람 확인") { return r.chk; }
-    if (f === "민감") { return r.sens; }
-    return true;
-  }
+  function ownerFilter(r) { return stateMatch(r, OSEL.filter); }
 
   function renderOwnerPeriod() {
     var ys = $("o-year"); ys.textContent = "";
@@ -922,25 +915,18 @@
     $("o-detail").hidden = false;
     $("o-title").textContent = isAll ? "전체 보기 · 담당자 " + groups.length + "명 모두" : g.name + " · " + g.catList.join(" · ");
     $("o-copy").hidden = isAll; // 한 사람에게 보낼 글이라서 전체 보기에서는 숨긴다
+    // 위의 네모가 곧 보기다: 누르면 그 처리 상태의 문장만 바로 보여 준다
     var tiles = $("o-tiles"); tiles.textContent = "";
-    [["전체", g.total, ""], ["처리 안 된 것", g.open, ""], ["긴급 높음", g.hi, g.hi ? "hot" : ""], ["기한 넘김", g.over, g.over ? "hot" : ""]].forEach(function (r) {
-      var t = el("div", "tile " + r[2]); t.appendChild(el("b", "", String(r[1]))); t.appendChild(el("span", "", r[0])); tiles.appendChild(t);
-    });
-    var cnt = {};
-    OFILTERS.forEach(function (f) { var keep = OSEL.filter; OSEL.filter = f; cnt[f] = g.rows.filter(ownerFilter).length; OSEL.filter = keep; });
-    var fb = $("o-filters"); fb.textContent = "";
-    var row = el("div", "frow"), chips = el("div", "fchips");
-    row.appendChild(el("span", "flab", "보기"));
     OFILTERS.forEach(function (f) {
-      var b = el("button", "", f + " " + cnt[f]); b.type = "button";
-      b.setAttribute("aria-pressed", String(OSEL.filter === f));
-      b.addEventListener("click", function () { OSEL.filter = f; OSEL.all = false; renderOwner(); });
-      chips.appendChild(b);
+      var n = g.rows.filter(function (r) { return stateMatch(r, f); }).length;
+      var t = el("button", "tile tbtn"); t.type = "button"; t.setAttribute("aria-pressed", String(OSEL.filter === f));
+      t.appendChild(el("b", "", String(n))); t.appendChild(el("span", "", f));
+      t.addEventListener("click", function () { OSEL.filter = f; OSEL.all = false; renderOwner(); });
+      tiles.appendChild(t);
     });
-    row.appendChild(chips); fb.appendChild(row);
     var ul = $("o-items"), more = $("o-more"); ul.textContent = ""; more.hidden = true;
     var rows = byPrio(g.rows.filter(ownerFilter));
-    if (!rows.length) { ul.appendChild(el("li", "empty", OSEL.filter === "처리 안 된 것" ? "처리 안 된 의견이 없어요." : "이 조건에 맞는 문장이 없어요.")); }
+    if (!rows.length) { ul.appendChild(el("li", "empty", "이 처리 상태의 문장이 없어요.")); }
     var LIMIT = 10, shown = OSEL.all ? rows : rows.slice(0, LIMIT);
     shown.forEach(function (r) { ul.appendChild(itemLi(r, true)); });
     if (rows.length > LIMIT) { more.hidden = false; more.textContent = OSEL.all ? "접기" : "나머지 " + (rows.length - LIMIT) + "건 더 보기"; }

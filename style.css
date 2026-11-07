@@ -301,3 +301,11 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 .notebox .nt { margin: 4px 0 0; font-size: 14px; white-space: pre-wrap; }
 .notebox .nt.empty { color: var(--muted); }
 .notebox textarea { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1.5px dashed var(--blue); border-radius: 10px; padding: 6px 10px; resize: vertical; }
+
+/* 담당자별 탭: 처리 상태 네모가 곧 보기 (누르면 바로 걸러 보여 준다) */
+#o-tiles { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); margin-bottom: 12px; }
+.tile.tbtn { font: inherit; text-align: left; color: var(--ink); border: 2px solid transparent; cursor: pointer; }
+.tile.tbtn b { display: block; font-size: 24px; font-weight: 900; line-height: 1.2; }
+.tile.tbtn span { font-size: 13px; color: var(--muted); }
+.tile.tbtn[aria-pressed="true"] { border-color: var(--blue); background: var(--bg); }
+.tile.tbtn[aria-pressed="true"] span { color: var(--blue); font-weight: 700; }
