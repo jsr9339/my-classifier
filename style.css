@@ -213,6 +213,7 @@ select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outl
 .opt { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; margin: 0 0 10px; cursor: pointer; }
 .opt input { margin-top: 4px; accent-color: var(--blue); }
 .opt small { color: var(--muted); }
+.opt > span small { display: block; }
 .metrics { margin-top: 12px; display: grid; gap: 4px; }
 .m-line { margin: 0; font-size: 13px; color: var(--muted); }
 .m-line.bad { color: var(--hot); font-weight: 700; }
