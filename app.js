@@ -314,6 +314,7 @@
     loaded: loaded,
     rules: function (raw) { return classifyRaw(raw); },
     cats: function () { return criteria ? criteria["칸"].slice().sort(function (a, b) { return a["순서"] - b["순서"]; }).map(function (c) { return c["이름"]; }) : []; },
+    criteria: function () { return criteria; },
     setStatus: setStatus
   };
 })();

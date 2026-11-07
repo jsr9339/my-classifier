@@ -51,7 +51,7 @@ def handle_classify(raw_body):
         if blocked:
             return blocked
         try:
-            return 200, {"결과": _core.classify_batch(texts)}
+            return 200, {"결과": _core.classify_batch(texts, variant=bool(data.get("확인")))}
         except _core.GeminiError:
             return 502, {"오류": "AI 호출에 실패했습니다", "종류": "AI"}
 

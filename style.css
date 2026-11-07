@@ -118,8 +118,8 @@ h3 { font-size: 13.5px; font-weight: 800; margin: 16px 0 0; }
 .pctl select { font: inherit; font-size: 13.5px; font-weight: 700; color: var(--ink); background: var(--card); border: 0; border-radius: 999px; padding: 4px 14px; }
 .months { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .months::-webkit-scrollbar { display: none; }
-.months button, .filters button { flex: none; white-space: nowrap; font: inherit; font-size: 12.5px; font-weight: 700; border: 0; border-radius: 999px; padding: 3px 10px; background: var(--card); color: var(--ink); cursor: pointer; }
-.months button[aria-pressed="true"], .filters button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.months button, .filters button, .fchips button { flex: none; white-space: nowrap; font: inherit; font-size: 12.5px; font-weight: 700; border: 0; border-radius: 999px; padding: 3px 10px; background: var(--card); color: var(--ink); cursor: pointer; }
+.months button[aria-pressed="true"], .filters button[aria-pressed="true"], .fchips button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
 .months button:disabled, .tcol:disabled { opacity: .4; cursor: default; }
 .trend { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; height: 124px; align-items: end; margin-top: 8px; }
 .tcol { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; border: 0; background: none; font: inherit; color: var(--muted); cursor: pointer; padding: 0; min-width: 0; }
@@ -206,3 +206,28 @@ h3 { font-size: 13.5px; font-weight: 800; margin: 16px 0 0; }
 .prg .b .p { background: color-mix(in srgb, var(--blue) 55%, var(--bg)); }
 .prg .b .a { background: var(--lo); }
 select:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- 대시보드 · 채점 추가분 ---------- */
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; margin: 0 0 10px; cursor: pointer; }
+.check input { margin-top: 4px; accent-color: var(--blue); }
+.check small { color: var(--muted); }
+.metrics { margin-top: 12px; display: grid; gap: 4px; }
+.m-line { margin: 0; font-size: 13px; color: var(--muted); }
+.m-line.bad { color: var(--hot); font-weight: 700; }
+.m-line select { font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink); background: var(--card); border: 0; border-radius: 999px; padding: 1px 8px; margin: 0 3px; }
+#d-sumbox { margin-top: 10px; margin-bottom: 0; font-size: 13px; line-height: 1.6; }
+.terms .fchips button { background: var(--card); }
+.chip.sens { color: var(--hot); border: 1px solid currentColor; }
+.chip.over { color: var(--hot); border: 1px solid currentColor; }
+.items .edit-btn { margin-left: auto; font: inherit; font-size: 12px; font-weight: 700; color: var(--blue); background: none; border: 0; cursor: pointer; padding: 0 4px; }
+.items p.why.alt { color: var(--warn); }
+.edit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.edit .k { min-width: 0; margin: 0; }
+.edit select { font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.edit .btn.plain { font-size: 12px; padding: 2px 12px; }
+.tscroll { overflow-x: auto; margin: 4px 0 12px; }
+table.prev { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.prev th, table.prev td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+table.prev th { color: var(--muted); font-weight: 700; }
+.dpanel.my { margin-top: 22px; }
+.dpanel.my .card { margin: 8px 0; }

@@ -32,18 +32,35 @@ URGS = [u["이름"] for u in CRITERIA["긴급도"]]
 _SURNAME = "김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남심노하곽성차주우구나민진지엄채원천방공현함변염여추도소석선설마길연위표명기반왕금옥인맹제모탁"
 _TITLES = "본부장|팀장|부장|차장|과장|대리|사원|주임|선임|책임|이사|대표|매니저|님"
 _NOT_NAME = "우리|이번|지난|저희|이미|이제|이런|그런|한번|오늘|서로|전체|전부|주로|주요|매번|다른|모든|오전|오후|정말|하나|조금"
+_RRN_DASH = re.compile(r"(?<![0-9])[0-9]{6}\s?-\s?[1-4][0-9]{6}(?![0-9])")
+_RRN_PLAIN = re.compile(r"(?<![0-9])[0-9]{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01])[1-4][0-9]{6}(?![0-9])")
+_CARD = re.compile(r"(?<![0-9])[0-9]{4}[-\s][0-9]{4}[-\s][0-9]{4}[-\s][0-9]{4}(?![0-9])")
+_EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _PHONE = re.compile(r"(?<![0-9])0[0-9]{1,2}[-\s.]?[0-9]{3,4}[-\s.]?[0-9xX*]{4}(?![0-9])")
 _EMP_LABEL = re.compile(r"(사번|사원번호)\s*[:：]?\s*[A-Za-z]{0,3}[0-9]{4,10}")
 _EMP_CODE = re.compile(r"(?<![A-Za-z0-9])[A-Z]{1,3}[0-9]{5,8}(?![A-Za-z0-9])")
+_ACCT_LABEL = re.compile(r"((?:계좌|입금|송금)[^0-9\n]{0,8})([0-9]{10,14})(?![0-9])")
+_ACCT_DASH = re.compile(r"(?<![0-9-])[0-9]{2,6}(?:-[0-9]{2,8}){2,3}(?![0-9-])")
+_ROAD = re.compile(r"[가-힣]{1,10}(?:시|군|구)\s?[가-힣0-9]{1,15}(?:로|길)\s?[0-9]{1,4}(?:-[0-9]{1,4})?(?:번길)?")
+_LOT = re.compile(r"[가-힣]{1,10}(?:동|읍|면|리)\s?[0-9]{1,4}-[0-9]{1,4}(?![0-9])")
 _NAME = re.compile(
     r"(?<![가-힣])(?!(?:" + _NOT_NAME + r"))[" + _SURNAME + r"][가-힣]{1,2}(?=\s?(?:" + _TITLES + r"))"
 )
 
 
 def mask_text(text):
-    t = _PHONE.sub("[전화번호]", str(text))
+    t = _RRN_DASH.sub("[주민번호]", str(text))
+    t = _RRN_PLAIN.sub("[주민번호]", t)
+    t = _CARD.sub("[카드번호]", t)
+    t = _EMAIL.sub("[이메일]", t)
+    t = _PHONE.sub("[전화번호]", t)
     t = _EMP_LABEL.sub(r"\1 [사번]", t)
     t = _EMP_CODE.sub("[사번]", t)
+    t = _ACCT_LABEL.sub(r"\1[계좌번호]", t)
+    # 날짜(2026-11-03)처럼 짧은 숫자는 두고, 숫자가 10자리 이상일 때만 계좌번호로 본다
+    t = _ACCT_DASH.sub(lambda m: "[계좌번호]" if len(m.group(0).replace("-", "")) >= 10 else m.group(0), t)
+    t = _ROAD.sub("[주소]", t)
+    t = _LOT.sub("[주소]", t)
     return _NAME.sub("[이름]", t)
 
 
@@ -192,14 +209,14 @@ _BATCH_SCHEMA = {
 }
 
 
-def _call_batch(model, api_key, masked_list, timeout):
+def _call_batch(model, api_key, masked_list, timeout, temperature=0):
     lines = ["아래 의견 %d개를 각각 분류해 주세요. 번호를 그대로 쓰고, 번호마다 결과를 하나씩 내세요." % len(masked_list)]
     lines += ["%d. %s" % (i + 1, t) for i, t in enumerate(masked_list)]
     body = {
         "systemInstruction": {"parts": [{"text": _SYSTEM}]},
         "contents": [{"role": "user", "parts": [{"text": "\n".join(lines)}]}],
         "generationConfig": {
-            "temperature": 0,
+            "temperature": temperature,
             "responseMimeType": "application/json",
             "responseSchema": _BATCH_SCHEMA,
         },
@@ -217,7 +234,7 @@ def _call_batch(model, api_key, masked_list, timeout):
     return out
 
 
-def classify_batch(texts, api_key=None, model=None):
+def classify_batch(texts, api_key=None, model=None, variant=False):
     """의견 여러 개를 가려서 한 번에 Gemini에 보낸다. 입력과 같은 순서의 목록을 돌려주고,
     분류하지 못한 항목은 None이다."""
     api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
@@ -228,7 +245,11 @@ def classify_batch(texts, api_key=None, model=None):
     valid = [i for i, t in enumerate(masked) if t]
     if not valid:
         raise GeminiError("빈 문장입니다")
-    send = [masked[i] for i in valid]
+    # variant=True: 순서를 거꾸로 하고 온도를 올려 한 번 더 분류한다 (첫 결과와 다르면 사람이 확인하게 하려는 용도)
+    order = list(range(len(valid)))
+    if variant:
+        order.reverse()
+    send = [masked[valid[k]] for k in order]
 
     last, out, used_model = None, None, None
     deadline = time.time() + float(os.environ.get("REQUEST_BUDGET", "25"))
@@ -238,7 +259,7 @@ def classify_batch(texts, api_key=None, model=None):
             if remaining < 3:
                 raise GeminiError("Gemini 호출 시간 초과")
             try:
-                out = _call_batch(m, api_key, send, min(22, remaining))
+                out = _call_batch(m, api_key, send, min(22, remaining), 0.6 if variant else 0)
                 used_model = m
                 break
             except urllib.error.HTTPError as e:
@@ -263,7 +284,7 @@ def classify_batch(texts, api_key=None, model=None):
             continue
         if not 0 <= n < len(send):
             continue
-        j = valid[n]
+        j = valid[order[n]]
         ok = item.get("칸") in CATS and item.get("긴급도") in URGS
         results[j] = {
             "칸": item.get("칸") if item.get("칸") in CATS else "기타",
