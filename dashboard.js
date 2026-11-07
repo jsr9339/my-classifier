@@ -16,7 +16,7 @@
   var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
   var ROWS = [], SEL = { y: 0, m: 0, filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
-    OSEL = { name: "", filter: "처리 안 된 것", all: false, cum: false };
+    OSEL = { name: "", filter: "처리 안 된 것", all: false, ms: null }; // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
   try { NAMES = JSON.parse(localStorage.getItem("dash-names") || "{}"); } catch (e) { NAMES = {}; }
   try { OVERDUE = Number(localStorage.getItem("dash-overdue")) || 3; } catch (e) { OVERDUE = 3; }
   function saveNames() { try { localStorage.setItem("dash-names", JSON.stringify(NAMES)); } catch (e) { /* 저장이 막혀도 동작은 한다 */ } }
@@ -703,9 +703,15 @@
   var OFILTERS = ["처리 안 된 것", "전체", "긴급 높음", "기한 넘김", "사람 확인", "민감"];
 
   function periodLabel() { return SEL.m ? SEL.y + "년 " + SEL.m + "월" : SEL.y + "년 전체"; }
-  // 담당자별 탭은 «누적»을 고를 수 있다: 1월부터 고른 달까지 모아서 본다
-  function inOwnerPeriod(r) { return r.y === SEL.y && (!SEL.m || (OSEL.cum ? r.m <= SEL.m : r.m === SEL.m)); }
-  function ownerPeriodLabel() { return SEL.m && OSEL.cum ? SEL.y + "년 1~" + SEL.m + "월 누적" : periodLabel(); }
+  // 담당자별 탭은 달을 여러 개 체크해서 합쳐 볼 수 있다(누적). 아무것도 체크하지 않으면 연 전체.
+  function inOwnerPeriod(r) { return r.y === SEL.y && (!OSEL.ms || !OSEL.ms.length || OSEL.ms.indexOf(r.m) !== -1); }
+  function ownerPeriodLabel() {
+    var ms = (OSEL.ms || []).slice().sort(function (x, y) { return x - y; });
+    if (!ms.length) { return SEL.y + "년 전체"; }
+    if (ms.length === 1) { return SEL.y + "년 " + ms[0] + "월"; }
+    var run = ms[ms.length - 1] - ms[0] === ms.length - 1;
+    return SEL.y + "년 " + (run ? ms[0] + "~" + ms[ms.length - 1] + "월" : ms.join(" · ") + "월") + " 누적";
+  }
   function allGroup(groups) {
     var g = { name: ALL, rows: [], cats: {} };
     groups.forEach(function (x) { g.rows = g.rows.concat(x.rows); x.catList.forEach(function (c) { g.cats[c] = true; }); });
@@ -758,14 +764,20 @@
       if (SEL.m && !ms[SEL.m]) { SEL.m = list[list.length - 1]; }
       SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render();
     };
-    var cum = $("o-cum"); cum.checked = OSEL.cum; cum.disabled = !SEL.m;
-    cum.onchange = function () { OSEL.cum = cum.checked; OSEL.all = false; renderOwner(); };
     var have = monthSet(SEL.y), box = $("o-months"); box.textContent = "";
+    if (!OSEL.ms) { OSEL.ms = SEL.m ? [SEL.m] : []; }
+    OSEL.ms = OSEL.ms.filter(function (x) { return have[x]; });
     for (var m = 0; m <= 12; m++) {
       (function (m) {
         var b = el("button", "", m === 0 ? "연 전체" : m + "월"); b.type = "button";
-        b.setAttribute("aria-pressed", String(SEL.m === m)); b.disabled = m !== 0 && !have[m];
-        b.addEventListener("click", function () { SEL.m = m; SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render(); });
+        var on = m === 0 ? !OSEL.ms.length : OSEL.ms.indexOf(m) !== -1;
+        b.setAttribute("aria-pressed", String(on)); b.disabled = m !== 0 && !have[m];
+        b.addEventListener("click", function () {
+          if (m === 0) { OSEL.ms = []; }
+          else if (on) { OSEL.ms = OSEL.ms.filter(function (x) { return x !== m; }); }
+          else { OSEL.ms = OSEL.ms.concat([m]); }
+          OSEL.all = false; renderOwner();
+        });
         box.appendChild(b);
       })(m);
     }
