@@ -38,8 +38,8 @@ h1 .b { color: var(--blue); }
 
 /* 흰 카드 */
 .sheet { margin: -42px 14px 0; background: var(--bg); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 14px 14px 16px; }
-.tabs { display: flex; gap: 16px; margin-bottom: 12px; }
-.tabs button { font: inherit; font-weight: 700; font-size: 14.5px; padding: 0 0 4px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; }
+.tabs { display: flex; gap: 0; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1 1 0; text-align: center; white-space: nowrap; font: inherit; font-weight: 700; font-size: 14.5px; padding: 0 0 6px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; }
 .tabs button[aria-selected="true"] { color: var(--blue); border-bottom-color: var(--blue); }
 .status { min-height: 1.2em; margin: 0 0 8px; color: var(--hot); font-size: 13px; }
 button:focus-visible, textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
