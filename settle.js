@@ -444,7 +444,15 @@ function evalFor(r) {
     var dn = el("select", "in"); DONES.forEach(function (v) { var o = el("option", "", v); o.value = v; dn.appendChild(o); }); dn.value = doneOf(it);
     dn.addEventListener("change", function () { editItem(it, function (c) { c.done = dn.value; }); });
     var l2 = el("label", "", "처리 완성도"); l2.appendChild(dn); f.appendChild(l2);
-  } else { f.appendChild(el("p", "note memo", "이 성격은 귀책이 없어서 중대성 · 반영 여부는 정하지 않아요.")); }
+  } else {
+    var dn0 = el("select", "in"); DONES.forEach(function (v) { var o = el("option", "", v); o.value = v; dn0.appendChild(o); }); dn0.value = doneOf(it);
+    dn0.addEventListener("change", function () { editItem(it, function (c) { c.done = dn0.value; }); });
+    var l0 = el("label", "", "처리 완성도"); l0.appendChild(dn0); f.appendChild(l0);
+    var nt = el("div", "memo"); nt.appendChild(el("p", "note", (kind === "확인 전" ? "문의 성격이 아직 정해지지 않았어요. " : "이 성격은 귀책이 없어서 점수에는 영향이 없어요. ") + "귀책이 있다면 문의 성격을 업무 오류 · 응대 문제로 바꾸면 중대성 · 반영 여부를 정할 수 있어요."));
+    var go = el("button", "btn sm", "문의 성격 고치기"); go.type = "button";
+    go.addEventListener("click", function () { r.kindOpen = true; if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); } });
+    nt.appendChild(go); f.appendChild(nt);
+  }
   var mi = el("input", "in"); mi.type = "text"; mi.maxLength = 200; mi.value = (ST.items[it.id] || {}).memo || ""; mi.placeholder = "예: 평가 시스템 오류라서 귀책 아님";
   if (it.over) {
     var ob = el("label", "chk memo"), oc = el("input"); oc.type = "checkbox"; oc.checked = odExOf(it); oc.id = "od-" + it.id; ob.htmlFor = oc.id;

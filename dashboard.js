@@ -524,7 +524,7 @@
     c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
     var kb = el("button", "ev-link", r.kindOpen ? "접기 ▴" : "고치기 ▾"); kb.type = "button";
     kb.addEventListener("click", function () { r.kindOpen = !r.kindOpen; render(); }); c2.appendChild(kb); row.appendChild(c2);
-    var c3 = evCell("평가 반영"), editable = !!EV_FAULT[inf.kind] || inf.over;
+    var c3 = evCell("평가 반영"), editable = true; // 처리 완료 카드를 포함해 모든 카드에서 고칠 수 있다
     if (EV_FAULT[inf.kind]) {
       c3.appendChild(el("span", "val", (inf.inc ? "반영" : "제외") + " · 중대성 " + inf.sev));
       c3.appendChild(el("span", "sub", "처리 완성도 " + inf.done + (inf.over ? (inf.odEx ? " · 기한 넘김은 귀책 아님" : " · 기한 넘김") : "")));
@@ -533,7 +533,7 @@
       c3.appendChild(el("span", "sub", inf.odEx ? "점수에서 빼요" : "담당자 귀책이 아니면 고치기에서 체크해요"));
     } else {
       c3.appendChild(el("span", "val", inf.kind === "확인 전" ? "확정 전" : "해당 없음"));
-      c3.appendChild(el("span", "sub", inf.kind === "확인 전" ? "성격이 정해지면 정할 수 있어요" : "귀책이 없어서 점수에 영향이 없어요"));
+      c3.appendChild(el("span", "sub", (inf.kind === "확인 전" ? "성격이 정해지면 정할 수 있어요" : "귀책이 없어서 점수에 영향이 없어요") + " · 처리 완성도 " + inf.done));
     }
     if (editable) {
       var eb = el("button", "ev-link", r.evalOpen ? "접기 ▴" : "고치기 ▾"); eb.type = "button";
