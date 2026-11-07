@@ -954,7 +954,7 @@
     $("o-copy").onclick = function () {
       var text = ownerText(g), box = $("o-box"), btn = $("o-copy");
       box.value = text; box.hidden = false;
-      var fin = function (ok) { btn.textContent = ok ? "복사됨" : "아래 글을 직접 복사해 주세요"; setTimeout(function () { btn.textContent = "이 담당자에게 보낼 글 복사"; }, 1800); };
+      var fin = function (ok) { btn.textContent = ok ? "복사됨" : "글을 직접 복사"; setTimeout(function () { btn.textContent = "처리요청"; }, 1800); };
       try { navigator.clipboard.writeText(text).then(function () { fin(true); }, function () { fin(false); }); } catch (e) { fin(false); }
     };
     $("o-box").hidden = true;
