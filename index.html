@@ -22,6 +22,7 @@
       <button type="button" id="btn-classify" role="tab" aria-selected="true">분류</button>
       <button type="button" id="btn-grade" role="tab" aria-selected="false">채점</button>
       <button type="button" id="btn-dash" role="tab" aria-selected="false">대시보드</button>
+      <button type="button" id="btn-owner" role="tab" aria-selected="false">담당자별</button>
     </div>
     <p id="status" class="status" role="status"></p>
 
@@ -109,6 +110,42 @@
           <h2>결과 보관 <small>서버에 저장하지 않아요</small></h2>
           <p class="hint">화면을 닫으면 분류 결과와 처리 단계가 사라져요. 내려받은 파일을 다음에 올리면 AI를 다시 부르지 않고 그대로 이어서 볼 수 있어요. 파일에는 개인정보를 가린 문장이 들어가요. 고친 칸 · 긴급도는 «고친 사례»로 따로 내려받을 수 있어요.</p>
           <div class="btns"><button type="button" id="d-down" class="btn fill">결과 내려받기 (CSV)</button><button type="button" id="d-down2" class="btn" disabled>고친 사례 내려받기</button><button type="button" id="d-reset" class="btn">처음으로</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-owner" hidden>
+      <div id="o-empty" class="dpanel">
+        <h2>담당자별 확인 <small>의견이 있어야 볼 수 있어요</small></h2>
+        <p class="hint">대시보드에서 의견을 분류하면 담당자별로 모아서 볼 수 있어요. 담당자는 칸마다 이름을 적어서 정해요.</p>
+        <div class="btns"><button type="button" id="o-go" class="btn">대시보드로 가기</button><button type="button" id="o-demo" class="btn fill">예시 데이터로 보기</button></div>
+      </div>
+
+      <div id="o-main" hidden>
+        <div class="dpanel">
+          <h2>기간 <small id="o-sub"></small></h2>
+          <div class="pctl"><label class="flab" for="o-year">연도</label><select id="o-year"></select></div>
+          <div class="pctl"><span class="flab">월</span><div class="months" id="o-months" role="group" aria-label="월 선택"></div></div>
+        </div>
+
+        <div class="dpanel">
+          <h2>담당자별 현황 <small>급한 사람 순 · 눌러서 한 명씩 확인해요</small></h2>
+          <div class="ocards" id="o-cards"></div>
+          <details class="names">
+            <summary>담당자 이름 정하기</summary>
+            <div class="nlist" id="o-names"></div>
+            <p class="fine">칸마다 담당자 이름을 적으면, 같은 이름은 한 사람으로 묶여요. 이름은 이 브라우저에만 저장돼요.</p>
+          </details>
+        </div>
+
+        <div class="dpanel" id="o-detail">
+          <h2 id="o-title"></h2>
+          <div class="tiles" id="o-tiles"></div>
+          <div class="filters" id="o-filters" role="group" aria-label="보기 방식" style="margin-top:12px"></div>
+          <ul class="items" id="o-items"></ul>
+          <button type="button" id="o-more" class="btn plain" hidden></button>
+          <div class="btns" style="margin-top:12px"><button type="button" id="o-copy" class="btn plain">이 담당자에게 보낼 글 복사</button></div>
+          <textarea id="o-box" rows="10" readonly hidden aria-label="담당자에게 보낼 글"></textarea>
         </div>
       </div>
     </section>

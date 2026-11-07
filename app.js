@@ -17,16 +17,17 @@
   var HERO = {
     classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
     dash: ["의견함 한눈에 보기", '<span class="b">사내 의견함</span><br>응대 현황'],
+    owner: ["담당자별로 확인하기", '<span class="b">담당자님</span>,<br>문의 확인 바랍니다.'],
     grade: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미']
   };
   function showTab(name) {
-    ["classify", "dash", "grade"].forEach(function (n) {
+    ["classify", "dash", "grade", "owner"].forEach(function (n) {
       $("tab-" + n).hidden = n !== name;
       $("btn-" + n).setAttribute("aria-selected", String(n === name));
     });
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
-    document.querySelector(".page").classList.toggle("wide", name === "dash");
+    document.querySelector(".page").classList.toggle("wide", name === "dash" || name === "owner");
   }
 
   function classifyRaw(raw) {
@@ -294,6 +295,7 @@
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-grade").addEventListener("click", function () { showTab("grade"); });
   $("btn-dash").addEventListener("click", function () { showTab("dash"); });
+  $("btn-owner").addEventListener("click", function () { showTab("owner"); });
   $("run").addEventListener("click", runClassify);
   input.addEventListener("input", autoGrow);
   input.addEventListener("keydown", function (e) {

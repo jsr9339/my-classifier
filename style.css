@@ -238,3 +238,25 @@ table.prev th { color: var(--muted); font-weight: 700; }
 .filters .fchips, .terms .fchips { flex-wrap: wrap; overflow: visible; gap: 5px; }
 .filters .fchips button, .terms .fchips button { font-size: 11.5px; padding: 3px 8px; }
 .terms.frow { margin-bottom: 10px; }
+
+/* ---------- 담당자별 확인 탭 ---------- */
+.ocards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.ocard { display: flex; flex-direction: column; gap: 4px; text-align: left; font: inherit; color: var(--ink); background: var(--card); border: 2px solid transparent; border-radius: 14px; padding: 10px 12px; cursor: pointer; min-width: 0; }
+.ocard[aria-pressed="true"] { border-color: var(--blue); }
+.ocard b { font-size: 15px; font-weight: 800; }
+.oc-cats { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.oc-bar { height: 6px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+.oc-bar i { display: block; height: 100%; background: var(--blue); }
+.oc-line { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.oc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.ocard .chip { background: var(--bg); }
+.chip.ok { color: var(--muted); }
+details.names { margin-top: 12px; }
+details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; color: var(--blue); }
+.nlist { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 10px; margin-top: 10px; }
+.nrow { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+.nrow .nm { width: 58px; font-weight: 700; flex: none; }
+.nrow .who-in { font: inherit; font-size: 13px; width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 2px 12px; }
+#o-box { margin-top: 10px; margin-bottom: 0; font-size: 13px; line-height: 1.6; }
+#o-more { margin-top: 10px; }
+#o-title { font-size: 16px; }
