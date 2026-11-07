@@ -723,6 +723,7 @@
       ROWS = d.rows.map(function (x, i) {
         var r = makeRow(x.t, x.d, { cat: x.c, urg: x.u, chk: x.k ? "예" : "", step: String(x.s) });
         r.src = "예시";
+        if (x.n) { r.note = x.n; } // 처리 완료 건의 지어낸 처리 내용(예시)
         if (x.g) { r.preset = { kind: x.g, cand: x.cd || "", sum: x.sm || "", tag: x.tg || "" }; } // 운영 결산 탭의 처음 값(예시)
         // 예시의 단계별 날짜는 접수일에 며칠씩 더해 만든다
         var base = toDate(x.d);
