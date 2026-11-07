@@ -17,7 +17,7 @@
   var HERO = {
     classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
     dash: ["의견함 한눈에 보기", '<span class="b">사내 의견함</span><br>응대 현황'],
-    owner: ["담당자별로 확인하기", '<span class="b">담당자님</span>,<br>문의 확인 바랍니다.'],
+    owner: ["담당자별로 확인하기", '<span class="b">담당자별</span><br>응대 현황'],
     grade: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미']
   };
   function showTab(name) {
