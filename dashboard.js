@@ -471,17 +471,20 @@
     r.step = k;
   }
   // 자동응답: 문의 성격이 «단순 문의»이고 자동응답 답변과 맞으면 처리 완료로 바꾸고, 처리 내용에 답변을 남긴다
+  function processAuto(r, name, text) {
+    if (!r.auto) { r.autoPrev = { step: r.step, stamps: r.stamps.slice(), note: r.note || "" }; } // 되돌릴 때 쓸 처음 상태
+    setStep(r, 3); r.note = ("[자동응답] " + text).slice(0, 300); r.auto = name; r.autoOff = false;
+    // 자동응답은 바로 답한 것이라 접수 다음 날(늦어도 오늘)에 끝난 것으로 적는다 → 경과 1일(빠름)
+    var rd = toDate(r.date), fd = rd ? new Date(rd.getTime() + DAY) : todayDate(); if (fd > todayDate()) { fd = todayDate(); }
+    for (var si = 1; si < 4; si++) { r.stamps[si] = dstr(fd); }
+  }
   function applyAuto() {
     if (!window.Auto || !window.Auto.on() || !window.Settle || !window.Settle.info) { return; }
     ROWS.forEach(function (r) {
       if (r.auto || r.autoOff || r.step === 3) { return; }
       var inf = window.Settle.info(r); if (!inf || inf.kind !== "단순 문의") { return; }
       var m = window.Auto.match(r.text, r.cat); if (!m) { return; }
-      r.autoPrev = { step: r.step, stamps: r.stamps.slice(), note: r.note || "" };
-      setStep(r, 3); r.note = ("[자동응답] " + m.text).slice(0, 300); r.auto = m.name;
-      // 자동응답은 바로 답한 것이라 접수 다음 날(늦어도 오늘)에 끝난 것으로 적는다 → 경과 1일(빠름)
-      var rd = toDate(r.date), fd = rd ? new Date(rd.getTime() + DAY) : todayDate(); if (fd > todayDate()) { fd = todayDate(); }
-      for (var si = 1; si < 4; si++) { r.stamps[si] = dstr(fd); }
+      processAuto(r, m.name, m.text);
     });
   }
   function undoAuto(r) {
@@ -800,6 +803,8 @@
   window.Dash = {
     ensure: ensureData,
     refreshOwner: function () { renderOwner(true); },
+    autoSend: function (r, name, text) { processAuto(r, name, text); render(); }, // 자동응답 탭에서 답변을 보낸다
+    autoUndo: function (r) { undoAuto(r); render(); },
     refresh: function () { render(); }, // 운영 결산이 확정 값을 바꾸거나 처음 준비되면 운영 현황 · 담당자별 화면을 다시 그린다
     data: function () {
       return { rows: ROWS, cats: cats(), nameOf: nameOf, ownerOf: ownerOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };

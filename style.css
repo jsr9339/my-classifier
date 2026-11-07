@@ -372,3 +372,15 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 .akind .alab2 { font-size: 12px; font-weight: 700; color: var(--muted); margin-right: 2px; }
 .akind button { font: inherit; font-size: 12.5px; font-weight: 700; border: 1.5px solid var(--blue); border-radius: 999px; padding: 1px 10px; background: transparent; color: var(--blue); cursor: pointer; }
 .akind button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.atabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.atabs button { font: inherit; font-size: 12.5px; font-weight: 700; border: 1.5px solid var(--blue); border-radius: 999px; padding: 2px 12px; background: transparent; color: var(--blue); cursor: pointer; }
+.atabs button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.apane { margin-top: 8px; padding: 8px 10px; background: var(--bg); border-radius: 12px; }
+.apane textarea.ain { font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1.5px dashed var(--blue); border-radius: 10px; padding: 6px 10px; width: 100%; resize: vertical; margin-bottom: 4px; display: block; }
+.apane .alink.add { font: inherit; font-size: 12.5px; font-weight: 800; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; }
+.apane .acat { font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; max-width: 100%; }
+.apane .why { margin: 4px 0 0; }
+.akind2 { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.akind2 .alab2 { font-size: 12px; font-weight: 700; color: var(--muted); }
+.akind2 button { font: inherit; font-size: 12.5px; font-weight: 700; border: 1.5px solid var(--blue); border-radius: 999px; padding: 1px 10px; background: transparent; color: var(--blue); cursor: pointer; }
+.items li .chip.need { background: var(--hot); color: var(--bg); }

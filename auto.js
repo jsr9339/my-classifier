@@ -47,8 +47,101 @@
     });
     return best;
   }
+  // 새 답변을 쓸 때 문의 글에서 낱말을 뽑아 답변의 «이런 낱말이 있으면»에 채운다 (목록에서 고칠 수 있다)
+  var STOPW = ["알려", "주세요", "궁금", "있는지", "어떻게", "언제", "무엇", "어디", "하나요", "되나요", "싶어요", "싶습니다", "해주세요", "문의", "확인", "관련", "대한"];
+  function autoKeys(t) {
+    var words = String(t).replace(/[^가-힣A-Za-z0-9\s]/g, " ").split(/\s+/).map(function (w) {
+      return w.replace(/(으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만|요)$/, "");
+    }).filter(function (w) { return w.length >= 2 && STOPW.indexOf(w) === -1; });
+    var seen = {}, out = [];
+    words.sort(function (x, y) { return y.length - x.length; }).forEach(function (w) { if (!seen[w] && out.length < 3) { seen[w] = 1; out.push(w); } });
+    return out.join(", ");
+  }
+  function uniqueName(base) {
+    var n = base, k = 2; while (ST.list.some(function (a) { return a.name === n; })) { n = base + " (" + k + ")"; k++; } return n;
+  }
+  function say(msg) { var m = $("a-msg"); if (m) { m.textContent = msg; } }
+  function send(r, ans) {
+    if (!window.Dash || !window.Dash.autoSend) { return; }
+    window.Dash.autoSend(r, ans.name, ans.text);
+    say("«" + r.text.slice(0, 16) + "…» 문의에 «" + ans.name + "» 답변을 보냈어요. 처리 완료로 바뀌었어요.");
+    render();
+  }
+  function write(r, text) {
+    text = String(text || "").trim(); if (!text) { say("답변 내용을 먼저 적어 주세요."); return; }
+    ST.seq = (ST.seq || ST.list.length) + 1;
+    var ans = { id: "a" + ST.seq, cat: r.cat, name: uniqueName(r.text.slice(0, 14).trim()), keys: autoKeys(r.text), text: text.slice(0, 400) };
+    ST.list.push(ans); save(); // 쓴 답변은 답변 목록에 그대로 쌓인다
+    window.Dash.autoSend(r, ans.name, ans.text);
+    say("«" + r.text.slice(0, 16) + "…» 문의에 답변을 보냈고, 답변 목록(" + r.cat + ")에도 «" + ans.name + "»으로 쌓았어요. 낱말은 목록에서 고칠 수 있어요.");
+    render();
+  }
+  var KIND_BTNS = ["확인 전", "업무 오류", "제도·시스템·외부", "현업 팀장·팀원"];
+  function item(r) {
+    var li = el("li"), t = el("div", "t");
+    t.appendChild(el("span", "chip", r.cat));
+    if (r.auto) { t.appendChild(el("span", "chip src", "자동응답 · " + r.auto)); if (r.stamps[3]) { t.appendChild(el("span", "chip", "처리 " + r.stamps[3].slice(5))); } }
+    else { t.appendChild(el("span", "chip need", "답변 필요")); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
+    li.appendChild(t); li.appendChild(el("p", "", r.text));
+    if (r.auto) { li.appendChild(el("p", "why", r.note || "")); }
+    var tabs = el("div", "atabs"); tabs.setAttribute("role", "tablist");
+    [["send", "자동응답 보내기"], ["write", "자동응답 쓰기"], ["kind", "문의 성격 바꾸기"]].forEach(function (p) {
+      var b = el("button", "", p[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-pressed", String(r.atab === p[0]));
+      b.addEventListener("click", function () { r.atab = r.atab === p[0] ? "" : p[0]; render(); });
+      tabs.appendChild(b);
+    });
+    li.appendChild(tabs);
+    if (r.atab === "send") {
+      var box = el("div", "apane"), withText = ST.list.filter(function (a) { return String(a.text || "").trim(); });
+      if (!withText.length) { box.appendChild(el("p", "fine", "보낼 수 있는 답변이 없어요. «자동응답 쓰기»로 새로 쓰거나 아래 답변 목록에 답변을 적어 주세요.")); }
+      else {
+        var sel = el("select", "acat"); sel.setAttribute("aria-label", "보낼 답변");
+        var best = match(r.text, r.cat);
+        withText.forEach(function (a) { var o = el("option", "", a.cat + " · " + a.name); o.value = a.id; sel.appendChild(o); });
+        sel.value = (best || withText[0]).id;
+        var prev = el("p", "why"); function upd() { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; prev.textContent = a ? a.text : ""; } upd();
+        sel.addEventListener("change", upd);
+        var go = el("button", "alink add", r.auto ? "다시 보내기" : "보내기"); go.type = "button";
+        go.addEventListener("click", function () { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; if (a) { send(r, a); } });
+        var row = el("div", "aact"); row.appendChild(sel); row.appendChild(go);
+        box.appendChild(row); box.appendChild(prev);
+        if (best) { box.appendChild(el("p", "fine", "낱말이 가장 잘 맞는 답변을 골라 두었어요.")); }
+      }
+      li.appendChild(box);
+    } else if (r.atab === "write") {
+      var wb = el("div", "apane"), ta = el("textarea", "ain"); ta.rows = 3; ta.maxLength = 400; ta.setAttribute("aria-label", "새 자동응답 답변");
+      ta.placeholder = "이 문의에 보낼 답변을 적어요 (실제 이름 · 개인정보는 적지 마세요)";
+      var wg = el("button", "alink add", "쓰고 보내기"); wg.type = "button"; wg.addEventListener("click", function () { write(r, ta.value); });
+      wb.appendChild(ta); wb.appendChild(wg);
+      wb.appendChild(el("p", "fine", "쓴 답변은 답변 목록(" + r.cat + ")에 자동으로 쌓여서, 다음에 비슷한 문의가 오면 자동응답이 써요."));
+      li.appendChild(wb);
+    } else if (r.atab === "kind") {
+      var kb = el("div", "apane akind2"); kb.appendChild(el("span", "alab2", "이 문의는"));
+      KIND_BTNS.forEach(function (k) {
+        var b = el("button", "", k); b.type = "button";
+        b.addEventListener("click", function () {
+          if (!window.Settle || !window.Settle.setKind) { return; }
+          if (r.auto && window.Dash && window.Dash.autoUndo) { window.Dash.autoUndo(r); } // 자동응답으로 처리하기 어려운 문의는 처리를 되돌리고 담당자가 직접 다룬다
+          window.Settle.setKind(r, k); r.atab = "";
+          say("«" + r.text.slice(0, 16) + "…» 문의의 성격을 «" + k + "»로 바꿨어요. 담당자별 탭에서 이어서 다룰 수 있어요.");
+          render();
+        });
+        kb.appendChild(b);
+      });
+      li.appendChild(kb);
+    }
+    return li;
+  }
+  // 상태 필터 (전체 / 답변 필요 / 처리함 중 하나)
+  function statusBar(box, needN, doneN) {
+    box.textContent = "";
+    [["all", "전체 " + (needN + doneN)], ["need", "답변 필요 " + needN], ["done", "처리함 " + doneN]].forEach(function (p) {
+      var b = el("button", "", p[1]); b.type = "button"; b.setAttribute("aria-pressed", String(FLT.status === p[0]));
+      b.addEventListener("click", function () { FLT.status = p[0]; render(); }); box.appendChild(b);
+    });
+  }
   // 카테고리 필터: 칩을 눌러 체크 · 해제하고, 체크한 카테고리의 문의만 보여 준다 (null = 모두)
-  var FLT = { done: null, need: null };
+  var FLT = { list: null, status: "all" };
   function pass(key, r) { return FLT[key] === null || FLT[key].indexOf(r.cat) !== -1; }
   function filterBar(box, key, list) {
     box.textContent = "";
@@ -107,54 +200,27 @@
     var cnt = {}; rows.forEach(function (r) { if (r.auto) { cnt[r.auto] = (cnt[r.auto] || 0) + 1; } });
     var total = Object.keys(cnt).reduce(function (s, k) { return s + cnt[k]; }, 0);
     $("a-sum").textContent = "지금까지 자동응답으로 처리한 문의 " + total + "건";
-    // 먼저: 자동응답으로 처리한 문의 (최근 것부터). 카테고리는 한 줄 필터로 고른다
-    var doneAll = rows.filter(function (r) { return r.auto; }).sort(function (x, y) { return (y.stamps[3] || "") < (x.stamps[3] || "") ? -1 : 1; });
-    filterBar($("a-done-f"), "done", doneAll);
-    var done = doneAll.filter(function (r) { return pass("done", r); }).slice(0, 12);
-    var ul = $("a-done"); ul.textContent = "";
-    if (!doneAll.length) { ul.appendChild(el("li", "empty", "아직 자동응답으로 처리한 문의가 없어요. 문의 성격이 «단순 문의»이고 아래 답변의 낱말과 맞는 문의가 생기면 여기에 쌓여요.")); }
-    else if (!done.length) { ul.appendChild(el("li", "empty", "체크한 카테고리의 문의가 없어요.")); }
-    done.forEach(function (r) {
-      var li = el("li"), t = el("div", "t");
-      t.appendChild(el("span", "chip", r.cat)); t.appendChild(el("span", "chip src", "자동응답 · " + r.auto));
-      if (r.stamps[3]) { t.appendChild(el("span", "chip", "처리 " + r.stamps[3].slice(5))); }
-      li.appendChild(t); li.appendChild(el("p", "", r.text)); li.appendChild(el("p", "why", r.note || "")); ul.appendChild(li);
-    });
-    // 담당자가 확인해 답변을 더할 문의: 단순 문의인데 맞는 답변이 없는 것
-    var needAll = rows.filter(function (r) {
-      if (r.auto) { return false; }
+    // 자동응답 문의: 답변이 필요한 단순 문의와 자동응답으로 처리한 문의를 한 목록에 (카테고리 · 상태를 체크한 것만)
+    var all = rows.filter(function (r) {
+      if (r.auto) { return true; }
       var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null;
-      return inf && inf.kind === "단순 문의" && !match(r.text, r.cat);
-    }).sort(function (x, y) { return (x.step === 3) - (y.step === 3); });
-    filterBar($("a-need-f"), "need", needAll);
-    var need = needAll.filter(function (r) { return pass("need", r); });
-    var nl = $("a-need"); nl.textContent = ""; $("a-need-n").textContent = needAll.length ? needAll.length + "건" : "";
-    if (!needAll.length) { nl.appendChild(el("li", "empty", "맞는 답변이 없는 단순 문의가 없어요.")); }
-    else if (!need.length) { nl.appendChild(el("li", "empty", "체크한 카테고리의 문의가 없어요.")); }
-    need.slice(0, 12).forEach(function (r) {
-      var li = el("li"), t = el("div", "t");
-      t.appendChild(el("span", "chip", r.cat)); t.appendChild(el("span", "chip", STEPS_LABEL[r.step]));
-      li.appendChild(t); li.appendChild(el("p", "", r.text));
-      var ctl = el("div", "aact");
-      var b = el("button", "alink add", "이 문의로 답변 만들기"); b.type = "button";
-      b.addEventListener("click", function () { addAnswer(r.cat, r.text.slice(0, 14)); var box = $("a-list"); if (box && box.scrollIntoView) { box.scrollIntoView({ behavior: "smooth", block: "start" }); } });
-      ctl.appendChild(b);
-      // 이 문의의 성격을 체크: 단순 문의면 답변을 만들고, 귀책 · 시스템 문제면 담당자가 직접 다룬다
-      var kg = el("div", "akind"); kg.setAttribute("role", "group"); kg.setAttribute("aria-label", "문의 성격 고르기"); kg.appendChild(el("span", "alab2", "성격"));
-      [["단순 문의", "단순 문의"], ["귀책", "업무 오류"], ["시스템 문제", "제도·시스템·외부"]].forEach(function (p) {
-        var kb = el("button", "", p[0]); kb.type = "button"; kb.setAttribute("aria-pressed", String(p[1] === "단순 문의"));
-        kb.title = p[0] === "귀책" ? "인사 담당자의 실수로 생긴 문의 (업무 오류)" : p[0] === "시스템 문제" ? "규정 · 시스템 · 외부 요인 (제도·시스템·외부)" : "제도 · 절차를 묻는 단순 문의";
-        kb.addEventListener("click", function () {
-          if (p[1] === "단순 문의" || !window.Settle || !window.Settle.setKind) { return; }
-          window.Settle.setKind(r, p[1]);
-          $("a-need-msg").textContent = "«" + r.text.slice(0, 16) + "…» 문의를 «" + p[0] + "»(" + p[1] + ")으로 바꿨어요. 담당자별 탭에서 판단 근거를 적어 주세요.";
-          render();
-        });
-        kg.appendChild(kb);
-      });
-      ctl.appendChild(kg); li.appendChild(ctl); nl.appendChild(li);
+      return inf && inf.kind === "단순 문의" && (r.step < 3 || !match(r.text, r.cat));
     });
-    if (need.length > 12) { nl.appendChild(el("li", "empty", "나머지 " + (need.length - 12) + "건은 답변을 만들면 줄어들어요.")); }
+    all.sort(function (x, y) {
+      if (!!x.auto !== !!y.auto) { return x.auto ? 1 : -1; } // 답변이 필요한 문의를 먼저
+      if (!x.auto) { return (x.step === 3) - (y.step === 3); }
+      return (y.stamps[3] || "") < (x.stamps[3] || "") ? -1 : 1;
+    });
+    var needN = all.filter(function (r) { return !r.auto; }).length;
+    $("a-count").textContent = "답변 필요 " + needN + "건 · 처리함 " + (all.length - needN) + "건";
+    statusBar($("a-stat-f"), needN, all.length - needN);
+    filterBar($("a-done-f"), "list", all.filter(function (r) { return FLT.status === "all" || (FLT.status === "need") === !r.auto; }));
+    var shown = all.filter(function (r) { return pass("list", r) && (FLT.status === "all" || (FLT.status === "need") === !r.auto); });
+    var ul = $("a-done"); ul.textContent = "";
+    if (!all.length) { ul.appendChild(el("li", "empty", "아직 자동응답 문의가 없어요. 문의 성격이 «단순 문의»인 문의가 생기면 여기에 나와요.")); }
+    else if (!shown.length) { ul.appendChild(el("li", "empty", "체크한 조건의 문의가 없어요.")); }
+    shown.slice(0, 20).forEach(function (r) { ul.appendChild(item(r)); });
+    if (shown.length > 20) { ul.appendChild(el("li", "empty", "나머지 " + (shown.length - 20) + "건은 위의 체크로 좁혀서 보세요.")); }
     // 답변 목록: 카테고리별로 묶어서
     var box = $("a-list"); box.textContent = "";
     cats().concat([COMMON]).forEach(function (c) {
