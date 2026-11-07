@@ -160,6 +160,7 @@ def classify_text(text, api_key=None, model=None):
                     "확인필요": bool(low or not valid),
                     "가린문장": masked,
                     "모델": m,
+                    "지시문": PROMPT_VERSION,
                 }
             except urllib.error.HTTPError as e:
                 last = "HTTP %d" % e.code

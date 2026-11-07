@@ -36,9 +36,27 @@
   </section>
 
   <section id="tab-grade" hidden>
-    <p>정답 30개로 규칙의 점수를 잽니다.</p>
-    <button type="button" id="grade" class="primary">규칙으로 채점</button>
+    <p class="hint">정답이 있는 문장 30개로 점수를 매겨요. 단추를 누를 때만 정답 파일을 열어요.</p>
+    <div class="row">
+      <button type="button" id="btn-score" class="primary">규칙으로 채점</button>
+      <button type="button" id="btn-ai" class="primary">AI로 채점</button>
+    </div>
+    <p id="ai-progress" class="progress" role="status" hidden></p>
+
+    <div id="ai-out" hidden>
+      <h2>규칙 · AI 나란히</h2>
+      <table class="cmp">
+        <thead><tr><th scope="col">지표</th><th scope="col">규칙</th><th scope="col">AI</th></tr></thead>
+        <tbody id="cmp-body"></tbody>
+      </table>
+      <p id="ai-cond" class="cond"></p>
+      <button type="button" id="btn-download">AI 채점 결과 내려받기</button>
+      <h2>AI가 틀린 문장</h2>
+      <ul id="ai-wrong" class="wrong"></ul>
+    </div>
+
     <div id="grade-result" hidden>
+      <h2>규칙 채점</h2>
       <div class="card">
         <p><span class="k">칸 맞은 수</span> <strong id="g-cat"></strong></p>
         <p><span class="k">긴급도 맞은 수</span> <strong id="g-urg"></strong></p>
@@ -46,7 +64,7 @@
         <p><span class="k">가장 나쁜 실수</span> <strong id="g-worst"></strong></p>
         <ul id="g-worst-list" class="plain"></ul>
       </div>
-      <h2>틀린 문장</h2>
+      <h2>규칙이 틀린 문장</h2>
       <ul id="g-wrong" class="wrong"></ul>
     </div>
   </section>

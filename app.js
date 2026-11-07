@@ -2,6 +2,8 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var criteria = null, keywords = null;
+  var ANSWER_PATH = "eval/answer.json"; // 채점 단추를 누를 때만 연다
+  var lastRule = null, lastAI = null;
 
   function setStatus(msg) { $("status").textContent = msg || ""; }
 
@@ -26,6 +28,7 @@
     return { masked: masked, res: res };
   }
 
+  // ---------- 분류 탭 ----------
   function showResult(masked, res, how) {
     $("masked").textContent = masked;
     $("r-cat").textContent = res["칸"];
@@ -36,7 +39,24 @@
     $("result").hidden = false;
   }
 
-  // AI(Gemini)로 분류한다. 서버로는 이름 · 전화번호 · 사번을 가린 문장만 보낸다.
+  // AI(Gemini) 호출. 서버로는 이름 · 전화번호 · 사번을 가린 문장만 보낸다.
+  function callAI(text) {
+    return fetch("api/classify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: Mask.maskText(text) })
+    }).then(function (r) {
+      return r.json().then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data["오류"] || "AI를 쓸 수 없어요");
+          err.kind = data["종류"] || "";
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
   // 실패하면(한도 · 오류) 규칙으로 가르고, 그 사실을 화면에 적는다.
   function runClassify() {
     var raw = $("input").value.trim();
@@ -44,20 +64,8 @@
     setStatus("");
     var btn = $("run");
     btn.disabled = true; btn.textContent = "분류 중...";
-    var masked = Mask.maskText(raw);
-
-    fetch("api/classify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: masked })
-    }).then(function (r) {
-      return r.json().then(function (data) { return { ok: r.ok, data: data }; });
-    }).then(function (r) {
-      if (r.ok) {
-        showResult(r.data["가린문장"] || masked, r.data, "AI(Gemini) 추정");
-      } else {
-        throw new Error(r.data["오류"] || "AI를 쓸 수 없어요");
-      }
+    callAI(raw).then(function (data) {
+      showResult(data["가린문장"] || Mask.maskText(raw), data, "AI(Gemini) 추정");
     }).catch(function (e) {
       var out = classifyRaw(raw);
       showResult(out.masked, out.res, "규칙(AI를 쓸 수 없어 대신 사용)");
@@ -75,70 +83,168 @@
     }).catch(function (e) { setStatus(e.message); });
   }
 
+  // ---------- 채점 탭 ----------
   function li(text, sub) {
     var el = document.createElement("li");
     el.appendChild(document.createTextNode(text));
     if (sub) {
       var s = document.createElement("span");
-      s.className = "cmp";
+      s.className = "cmp-sub";
       s.textContent = sub;
       el.appendChild(s);
     }
     return el;
   }
 
-  function runGrade() {
-    setStatus("");
-    getJSON("data/answer.json").then(function (answers) {
-      var okCat = 0, okUrg = 0, okBoth = 0;
-      var wrongList = $("g-wrong"); wrongList.textContent = "";
-      var worstRules = criteria["가장_나쁜_실수_규칙"] || [];
-      var worstTotal = 0, worstBad = 0;
-      var worstByRule = worstRules.map(function (r) { return { rule: r, total: 0, bad: 0 }; });
-
-      answers.forEach(function (a) {
-        var out = classifyRaw(a.text), res = out.res;
-        var catOk = res["칸"] === a["칸"], urgOk = res["긴급도"] === a["긴급도"];
-        if (catOk) okCat++;
-        if (urgOk) okUrg++;
-        if (catOk && urgOk) okBoth++;
-        else {
-          wrongList.appendChild(li(
-            a.id + " " + a.text,
-            "정답 " + a["칸"] + " / " + a["긴급도"] + "  →  규칙 " + res["칸"] + " / " + res["긴급도"]
-          ));
+  // results[i] = { 칸, 긴급도, 확인필요, 이유 } 또는 null(호출 실패)
+  function computeStats(answers, results, label) {
+    var rules = criteria["가장_나쁜_실수_규칙"] || [];
+    var st = { n: answers.length, okCat: 0, okUrg: 0, okBoth: 0, worstBad: 0, worstTotal: 0, low: 0, failed: 0, wrong: [], worstByRule: [] };
+    st.worstByRule = rules.map(function (r) { return { rule: r, total: 0, bad: 0 }; });
+    answers.forEach(function (a, i) {
+      var res = results[i];
+      if (!res) { st.failed++; res = { "칸": "(실패)", "긴급도": "(실패)", "확인필요": false }; }
+      var catOk = res["칸"] === a["칸"], urgOk = res["긴급도"] === a["긴급도"];
+      if (catOk) st.okCat++;
+      if (urgOk) st.okUrg++;
+      if (res["확인필요"]) st.low++;
+      if (catOk && urgOk) st.okBoth++;
+      else st.wrong.push({ id: a.id, text: a.text, answer: a["칸"] + " / " + a["긴급도"], got: res["칸"] + " / " + res["긴급도"], label: label });
+      st.worstByRule.forEach(function (w) {
+        if (a["칸"] === w.rule["칸"] && a["긴급도"] === w.rule["긴급도"]) {
+          w.total++; st.worstTotal++;
+          if (!(catOk && urgOk)) { w.bad++; st.worstBad++; }
         }
-        worstByRule.forEach(function (w) {
-          if (a["칸"] === w.rule["칸"] && a["긴급도"] === w.rule["긴급도"]) {
-            w.total++; worstTotal++;
-            // 다른 칸으로 갔거나, 긴급도가 정답(높음)보다 낮으면 가장 나쁜 실수
-            if (res["칸"] !== a["칸"] || res["긴급도"] !== a["긴급도"]) { w.bad++; worstBad++; }
-          }
-        });
       });
+    });
+    return st;
+  }
 
-      var n = answers.length;
-      $("g-cat").textContent = okCat + " / " + n;
-      $("g-urg").textContent = okUrg + " / " + n;
-      $("g-both").textContent = okBoth + " / " + n;
-      $("g-worst").textContent = worstBad + " / " + worstTotal;
-      var wl = $("g-worst-list"); wl.textContent = "";
-      worstByRule.forEach(function (w) {
-        wl.appendChild(li(w.rule["칸"] + " · " + w.rule["긴급도"] + " 정답 " + w.total + "개 중 " + w.bad + "개 놓침"));
-      });
-      $("grade-result").hidden = false;
+  function renderWrong(listEl, st) {
+    listEl.textContent = "";
+    st.wrong.forEach(function (w) {
+      listEl.appendChild(li(w.id + " " + w.text, "정답 " + w.answer + "  →  " + w.label + " " + w.got));
+    });
+  }
+
+  function renderRuleCard(st) {
+    $("g-cat").textContent = st.okCat + " / " + st.n;
+    $("g-urg").textContent = st.okUrg + " / " + st.n;
+    $("g-both").textContent = st.okBoth + " / " + st.n;
+    $("g-worst").textContent = st.worstBad + " / " + st.worstTotal;
+    var wl = $("g-worst-list"); wl.textContent = "";
+    st.worstByRule.forEach(function (w) {
+      wl.appendChild(li(w.rule["칸"] + " · " + w.rule["긴급도"] + " 정답 " + w.total + "개 중 " + w.bad + "개 놓침"));
+    });
+    renderWrong($("g-wrong"), st);
+    $("grade-result").hidden = false;
+  }
+
+  function runRuleGrade() {
+    setStatus("");
+    return getJSON(ANSWER_PATH).then(function (answers) {
+      var results = answers.map(function (a) { return classifyRaw(a.text).res; });
+      lastRule = computeStats(answers, results, "규칙");
+      renderRuleCard(lastRule);
+      return { answers: answers, stats: lastRule };
     }).catch(function (e) { setStatus(e.message); });
   }
 
-  // 채점 탭은 정답 파일이 있는 내 컴퓨터에서만 보인다. 공개 링크에서는 숨긴다.
-  var isLocal = ["localhost", "127.0.0.1"].indexOf(location.hostname) !== -1;
-  if (!isLocal) { document.querySelector(".tabs").hidden = true; }
+  function addRow(tbody, label, a, b) {
+    var tr = document.createElement("tr");
+    [label, a, b].forEach(function (t, i) {
+      var c = document.createElement(i === 0 ? "th" : "td");
+      if (i === 0) c.setAttribute("scope", "row");
+      c.textContent = t;
+      tr.appendChild(c);
+    });
+    tbody.appendChild(tr);
+  }
+
+  function renderCompare(rule, ai, cond) {
+    var body = $("cmp-body"); body.textContent = "";
+    var n = rule.n;
+    addRow(body, "칸 맞은 수", rule.okCat + " / " + n, ai.okCat + " / " + n);
+    addRow(body, "긴급도 맞은 수", rule.okUrg + " / " + n, ai.okUrg + " / " + n);
+    addRow(body, "둘 다 맞은 수", rule.okBoth + " / " + n, ai.okBoth + " / " + n);
+    addRow(body, "가장 나쁜 실수 놓침", rule.worstBad + " / " + rule.worstTotal, ai.worstBad + " / " + ai.worstTotal);
+    addRow(body, "«사람이 확인» 표시", rule.low + "개", ai.low + "개");
+    $("ai-cond").textContent = cond;
+    renderWrong($("ai-wrong"), ai);
+    $("ai-out").hidden = false;
+  }
+
+  function runAIGrade() {
+    getJSON(ANSWER_PATH).then(function (answers) {
+      var n = answers.length;
+      if (!window.confirm("AI로 채점하면 AI를 " + n + "번 부릅니다.\n하루 사용 한도 중 " + n + "회가 쓰여요. 계속할까요?")) { return; }
+      var btn = $("btn-ai"), prog = $("ai-progress");
+      btn.disabled = true; $("btn-score").disabled = true;
+      prog.hidden = false; prog.textContent = "AI 채점 중... 0 / " + n;
+      setStatus("");
+
+      var results = new Array(n), idx = 0, done = 0, abort = "";
+      function worker() {
+        if (abort || idx >= n) { return Promise.resolve(); }
+        var i = idx++;
+        return callAI(answers[i].text).then(function (res) {
+          results[i] = res;
+        }).catch(function (e) {
+          if (e.kind === "한도" || e.kind === "한도장치미설정" || e.kind === "한도장치오류") { abort = e.message; }
+          else { results[i] = null; }
+        }).then(function () {
+          done++; prog.textContent = "AI 채점 중... " + done + " / " + n;
+          return worker();
+        });
+      }
+      return Promise.all([worker(), worker(), worker()]).then(function () {
+        btn.disabled = false; $("btn-score").disabled = false;
+        if (abort) {
+          prog.textContent = "중간에 멈췄어요: " + abort + " (채점이 끝나지 않아 결과는 보여 주지 않아요)";
+          return;
+        }
+        prog.hidden = true;
+        var rulePart = lastRule ? Promise.resolve(lastRule) : runRuleGrade().then(function (r) { return r && r.stats; });
+        return rulePart.then(function (rule) {
+          var ai = computeStats(answers, results, "AI");
+          var used = results.filter(Boolean).length, models = {}, prompts = {};
+          results.forEach(function (r) { if (r) { models[r["모델"]] = (models[r["모델"]] || 0) + 1; prompts[r["지시문"] || "?"] = true; } });
+          var cond = "조건: 모델 " + Object.keys(models).map(function (m) { return m + " " + models[m] + "회"; }).join(", ")
+            + " · 지시문 " + Object.keys(prompts).join(",")
+            + " · 기준 criteria.json version " + criteria["version"]
+            + " · 1회 채점 · AI 호출 " + n + "회 사용" + (ai.failed ? " · 호출 실패 " + ai.failed + "개(틀린 것으로 셈)" : "");
+          lastAI = { cond: cond, rule: rule, ai: ai, date: new Date().toISOString() };
+          renderCompare(rule, ai, cond);
+        });
+      });
+    }).catch(function (e) {
+      $("btn-ai").disabled = false; $("btn-score").disabled = false;
+      setStatus(e.message);
+    });
+  }
+
+  function downloadAI() {
+    if (!lastAI) { return; }
+    var blob = new Blob([JSON.stringify({
+      날짜: lastAI.date, 조건: lastAI.cond,
+      규칙: { 칸: lastAI.rule.okCat, 긴급도: lastAI.rule.okUrg, 둘다: lastAI.rule.okBoth, 가장나쁜실수: [lastAI.rule.worstBad, lastAI.rule.worstTotal] },
+      AI: { 칸: lastAI.ai.okCat, 긴급도: lastAI.ai.okUrg, 둘다: lastAI.ai.okBoth, 가장나쁜실수: [lastAI.ai.worstBad, lastAI.ai.worstTotal], 사람확인표시: lastAI.ai.low },
+      AI가틀린문장: lastAI.ai.wrong
+    }, null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ai_채점_결과.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
 
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-grade").addEventListener("click", function () { showTab("grade"); });
   $("run").addEventListener("click", runClassify);
   $("sample").addEventListener("click", loadSample);
-  $("grade").addEventListener("click", runGrade);
+  $("btn-score").addEventListener("click", runRuleGrade);
+  $("btn-ai").addEventListener("click", runAIGrade);
+  $("btn-download").addEventListener("click", downloadAI);
 
   Promise.all([getJSON("criteria.json"), getJSON("keywords.json")]).then(function (r) {
     criteria = r[0]; keywords = r[1];
