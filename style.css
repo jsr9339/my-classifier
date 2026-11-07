@@ -328,3 +328,13 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 .otrow h2 { margin: 0; }
 .otrow .btn { padding: 4px 16px; }
 #o-box { margin: 0 0 12px; }
+
+/* 운영 현황: 넓은 화면에서는 두 칸씩 짝을 지어 높이를 맞춘다 (요약 | 칸별 분포 / 카테고리별 문의 확인 | 담당자별 진행) */
+@media (min-width: 880px) {
+  .dcols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+  .dcols > .dstack { display: contents; }
+  .dcols > .dstack:nth-child(1) > .dpanel:nth-child(1) { grid-area: 1 / 1; }
+  .dcols > .dstack:nth-child(1) > .dpanel:nth-child(2) { grid-area: 2 / 1; }
+  .dcols > .dstack:nth-child(2) > .dpanel:nth-child(1) { grid-area: 1 / 2; }
+  .dcols > .dstack:nth-child(2) > .dpanel:nth-child(2) { grid-area: 2 / 2; }
+}
