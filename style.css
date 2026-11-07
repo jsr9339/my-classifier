@@ -231,3 +231,11 @@ table.prev th, table.prev td { text-align: left; padding: 5px 8px; border-bottom
 table.prev th { color: var(--muted); font-weight: 700; }
 .dpanel.my { margin-top: 22px; }
 .dpanel.my .card { margin: 8px 0; }
+
+/* 먼저 볼 문장의 걸러 보기 줄은 한 줄에 다 보이게 한다 (좁으면 그 줄만 옆으로 민다) */
+.filters .frow, .terms.frow { gap: 6px; }
+.filters .flab, .terms .flab { width: 68px; font-size: 12px; line-height: 1.3; white-space: nowrap; }
+.filters .fchips, .terms .fchips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: 1; }
+.filters .fchips::-webkit-scrollbar, .terms .fchips::-webkit-scrollbar { display: none; }
+.filters .fchips button, .terms .fchips button { font-size: 12px; padding: 3px 8px; }
+.terms.frow { margin-bottom: 8px; }
