@@ -498,7 +498,7 @@ function buildYears(ys) {
 }
 function showYear(ys) {
   buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false; $("adjwrap").hidden = false;
-  $("adjyear").textContent = YEAR + "년 기준이에요(운영 결산 탭에서 고른 해와 같아요). 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
+  $("adjyear").textContent = "문의 성격 · 귀책 확정 (" + YEAR + "년 기준, 운영 결산 탭에서 고른 해와 같아요). 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
   loadYear(YEAR); PICK = ""; TAB = "";
   drawStatic(); buildTargets(); buildAdj(); buildRubric(); buildNext();
   var un = OWNERS.some(function (o) { return o.n === UNASSIGNED; });

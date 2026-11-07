@@ -151,10 +151,37 @@
         </div>
       </div>
     <div class="settle-scope" id="s-adjwrap" hidden>
+      <p class="src" id="s-adjyear" style="margin:0 4px 4px"></p>
+      <section class="panel" aria-labelledby="s-h-it">
+    <h2 id="s-h-it">문의 성격 확정 <small id="s-it-sub"></small></h2>
+    <p class="src">총괄자가 문장마다 성격을 고르고, 업무 오류 · 응대 문제는 귀책 담당자와 근거를 남겨요. 인사 담당자의 실수는 «업무 오류», 현업 팀장 · 팀원 때문에 생긴 건은 «현업 팀장·팀원»으로 따로 나눠요. 확정한 건만 평가에 쓰여요. 아래 탭을 눌러 펼쳐 보세요.</p>
+    <div class="edit-h" style="margin:0 0 4px"><label for="s-chief">확정하는 사람(총괄자) <input class="in" id="s-chief" type="text" maxlength="20" placeholder="예: 홍길동"></label></div>
+    <p class="note" style="margin:6px 0 0">입력한 값은 이 브라우저에만 저장되고 서버로 가지 않아요. 근거 메모에 실제 이름 · 개인정보는 적지 마세요.</p>
+    <div class="flt" id="s-ktabs" role="group" aria-label="문의 성격"></div>
+    <div id="s-kbody" hidden>
+      <p class="kdef" id="s-kdef"></p>
+      <div id="s-kpend" hidden>
+        <h3 id="s-ct" style="font-size:16px">「확인 전」인 건</h3>
+        <div class="tscroll"><table>
+          <thead><tr><th>담당자</th><th class="n">건수</th><th>어떤 문의인가 (후보 표시)</th><th></th></tr></thead>
+          <tbody id="s-pend"></tbody>
+        </table></div>
+        <p class="note">문장마다 <b>후보 표시</b>를 달아 두었지만 이것은 참고용이에요. 확정은 총괄자가 해요. 담당자 줄의 «확정하기»를 누르면 아래에 입력 칸이 열려요.</p>
+        <div class="opanel" id="s-opanel" hidden>
+          <h3 id="s-pick-h"></h3>
+          <div class="flt" id="s-subtabs" role="group" aria-label="확정 또는 수정"></div>
+          <p class="note" id="s-subnote" style="margin-top:0"></p>
+          <ul class="items scroll" id="s-oitems"></ul>
+        </div>
+      </div>
+      <div id="s-klist" hidden>
+        <ul class="items scroll" id="s-kitems"></ul>
+      </div>
+    </div>
+  </section>
       <details class="fold" id="s-adjfold" open>
       <summary>귀책 여부 확정 <span class="sub">기한 넘김 · 사례별 중대성(상 · 중 · 하)</span></summary>
       <div class="fold-body">
-      <p class="src" id="s-adjyear"></p>
     <h3 style="margin-top:12px">기한 넘김의 귀책</h3>
       <p class="note" style="margin-top:0">기한 넘김이 담당자 귀책인지 아닌지 정해요. 제도 · 시스템 · 현업 요인처럼 담당자 귀책이 아니면 그 건수만큼 «귀책 아님»으로 빼고, 판단 근거를 적어 두세요. 귀책으로 남은 건수만 점수에 들어가요.</p>
     <div class="tscroll"><table>
@@ -223,33 +250,7 @@
     </section>
   </div>
 
-  <section class="panel" aria-labelledby="s-h-it">
-    <h2 id="s-h-it">문의 성격 확정 <small id="s-it-sub"></small></h2>
-    <p class="src">총괄자가 문장마다 성격을 고르고, 업무 오류 · 응대 문제는 귀책 담당자와 근거를 남겨요. 인사 담당자의 실수는 «업무 오류», 현업 팀장 · 팀원 때문에 생긴 건은 «현업 팀장·팀원»으로 따로 나눠요. 확정한 건만 평가에 쓰여요. 아래 탭을 눌러 펼쳐 보세요.</p>
-    <div class="edit-h" style="margin:0 0 4px"><label for="s-chief">확정하는 사람(총괄자) <input class="in" id="s-chief" type="text" maxlength="20" placeholder="예: 홍길동"></label></div>
-    <p class="note" style="margin:6px 0 0">입력한 값은 이 브라우저에만 저장되고 서버로 가지 않아요. 근거 메모에 실제 이름 · 개인정보는 적지 마세요.</p>
-    <div class="flt" id="s-ktabs" role="group" aria-label="문의 성격"></div>
-    <div id="s-kbody" hidden>
-      <p class="kdef" id="s-kdef"></p>
-      <div id="s-kpend" hidden>
-        <h3 id="s-ct" style="font-size:16px">「확인 전」인 건</h3>
-        <div class="tscroll"><table>
-          <thead><tr><th>담당자</th><th class="n">건수</th><th>어떤 문의인가 (후보 표시)</th><th></th></tr></thead>
-          <tbody id="s-pend"></tbody>
-        </table></div>
-        <p class="note">문장마다 <b>후보 표시</b>를 달아 두었지만 이것은 참고용이에요. 확정은 총괄자가 해요. 담당자 줄의 «확정하기»를 누르면 아래에 입력 칸이 열려요.</p>
-        <div class="opanel" id="s-opanel" hidden>
-          <h3 id="s-pick-h"></h3>
-          <div class="flt" id="s-subtabs" role="group" aria-label="확정 또는 수정"></div>
-          <p class="note" id="s-subnote" style="margin-top:0"></p>
-          <ul class="items scroll" id="s-oitems"></ul>
-        </div>
-      </div>
-      <div id="s-klist" hidden>
-        <ul class="items scroll" id="s-kitems"></ul>
-      </div>
-    </div>
-  </section>
+  
 
 <section class="panel" aria-labelledby="s-h-own">
     <h2 id="s-h-own">담당자별 응대 현황 <small>처리율 + 문의 성격 · 점검용</small></h2>
@@ -263,7 +264,7 @@
       <span><i class="k-y"></i>제도·시스템·외부</span><span><i class="k-f"></i>현업 팀장·팀원</span><span><i class="k-u"></i>확인 전</span>
     </div>
     <p class="note">«비율»은 귀책 확정 건수에 중대성 가중치(상 · 중 · 하)를 곱해 더한 값 ÷ max(접수, 20)이에요. 접수가 20건보다 적으면 20건으로 나눠서 한두 건 차이로 크게 흔들리지 않게 해요.</p>
-    <p class="note" style="margin-top:12px">기한 넘김 · 사례별 중대성의 <b>귀책 여부 확정</b>은 «담당자별» 탭 아래에서 해요.</p>
+    <p class="note" style="margin-top:12px"><b>문의 성격 확정</b>과 <b>귀책 여부 확정</b>은 «담당자별» 탭 아래에서 해요.</p>
   </section>
   <section class="panel" aria-labelledby="s-h-sc">
     <h2 id="s-h-sc">평가 점수 (예시) <small>현재 자료로 계산 · 참고용</small></h2>
