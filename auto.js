@@ -1,5 +1,5 @@
-// 자동응답 탭: 문의 성격이 «단순 문의»인 의견에 미리 적어 둔 답변을 붙여 자동으로 처리한다.
-// 답변 목록 · 켜고 끄기는 이 브라우저(localStorage)에만 저장하고 서버로 보내지 않는다.
+// 자동응답 탭: 문의 성격이 «단순 문의»인 의견에 미리 적어 둔 답변을, 담당자가 «보내기»를 눌렀을 때만 보낸다. (자동으로 처리하지 않는다)
+// 답변 목록은 이 브라우저(localStorage)에만 저장하고 서버로 보내지 않는다.
 // 처음 들어 있는 답변은 예시 문구다. 회사의 실제 안내에 맞게 고쳐 쓴다.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
@@ -194,12 +194,9 @@
   }
 
   function render() {
-    var sw = $("a-on"); if (!sw) { return; }
-    sw.checked = !!ST.on;
+    if (!$("a-list")) { return; }
     var rows = window.Dash && window.Dash.data ? window.Dash.data().rows : [];
     var cnt = {}; rows.forEach(function (r) { if (r.auto) { cnt[r.auto] = (cnt[r.auto] || 0) + 1; } });
-    var total = Object.keys(cnt).reduce(function (s, k) { return s + cnt[k]; }, 0);
-    $("a-sum").textContent = "지금까지 자동응답으로 처리한 문의 " + total + "건";
     // 자동응답 문의: 답변이 필요한 단순 문의와 자동응답으로 처리한 문의를 한 목록에 (카테고리 · 상태를 체크한 것만)
     var all = rows.filter(function (r) {
       if (r.auto) { return true; }
@@ -241,7 +238,6 @@
     });
   }
 
-  $("a-on").addEventListener("change", function () { ST.on = this.checked; changed(); });
   $("a-add").addEventListener("click", function () { addAnswer(COMMON); });
   $("a-addcat").addEventListener("click", function () {
     var inp = $("a-newcat"), msg = $("a-catmsg");
@@ -253,5 +249,5 @@
     b.dataset.ask = ""; b.textContent = "처음 답변으로 되돌리기";
     ST.list = fresh(); ST.seq = DEFAULTS.length; changed();
   });
-  window.Auto = { on: function () { return !!ST.on; }, match: match, render: render };
+  window.Auto = { match: match, render: render };
 })();

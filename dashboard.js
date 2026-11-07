@@ -478,15 +478,6 @@
     var rd = toDate(r.date), fd = rd ? new Date(rd.getTime() + DAY) : todayDate(); if (fd > todayDate()) { fd = todayDate(); }
     for (var si = 1; si < 4; si++) { r.stamps[si] = dstr(fd); }
   }
-  function applyAuto() {
-    if (!window.Auto || !window.Auto.on() || !window.Settle || !window.Settle.info) { return; }
-    ROWS.forEach(function (r) {
-      if (r.auto || r.autoOff || r.step === 3) { return; }
-      var inf = window.Settle.info(r); if (!inf || inf.kind !== "단순 문의") { return; }
-      var m = window.Auto.match(r.text, r.cat); if (!m) { return; }
-      processAuto(r, m.name, m.text);
-    });
-  }
   function undoAuto(r) {
     var p = r.autoPrev;
     if (p) { r.step = p.step; r.stamps = p.stamps; r.note = p.note; }
@@ -696,7 +687,6 @@
     });
   }
   function render() {
-    applyAuto();
     var v = viewOf();
     renderPeriod(); renderTiles(v); renderFilters(v); renderItems(v); renderBars(v); renderAssign(v); renderOwner();
     $("d-down2").disabled = !ROWS.some(function (r) { return r.edited; });
