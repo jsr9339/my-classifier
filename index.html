@@ -20,8 +20,7 @@
 
   <main class="sheet">
     <div class="tabs" role="tablist">
-      <button type="button" id="btn-classify" role="tab" aria-selected="true">분류</button>
-      <button type="button" id="btn-grade" role="tab" aria-selected="false">채점</button>
+      <button type="button" id="btn-classify" role="tab" aria-selected="true">분류·채점</button>
       <button type="button" id="btn-owner" role="tab" aria-selected="false">담당자별</button>
       <button type="button" id="btn-dash" role="tab" aria-selected="false">운영 현황</button>
       <button type="button" id="btn-settle" role="tab" aria-selected="false">운영 결산</button>
@@ -322,7 +321,8 @@
 </div>
     </section>
 
-    <section id="tab-grade" hidden>
+    <section id="tab-grade">
+      <h2 class="gh">채점 <small>정답이 있는 문장으로 규칙과 AI의 점수를 재요</small></h2>
       <p class="hint">정답이 있는 문장 30개로 점수를 매겨요. 단추를 누를 때만 정답 파일을 열어요.</p>
       <div class="btns">
         <button type="button" id="btn-score" class="btn">규칙으로 채점</button>

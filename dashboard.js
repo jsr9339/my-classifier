@@ -25,6 +25,13 @@
     if (Object.prototype.hasOwnProperty.call(NAMES, cat)) { return NAMES[cat]; }
     return DEMO_ON ? (DEMO[cat] || "") : "";
   }
+  // 한 문장의 담당자: 직접 고른 사람(r.owner)이 있으면 그 사람, 없으면 칸에 적은 이름
+  function ownerOf(r) { return r.owner ? r.owner : (nameOf(r.cat) || UNASSIGNED); }
+  function knownNames() {
+    var seen = {}, list = [];
+    cats().map(nameOf).concat(ROWS.map(function (r) { return r.owner || ""; })).forEach(function (n) { if (n && n !== UNASSIGNED && !seen[n]) { seen[n] = 1; list.push(n); } });
+    return list;
+  }
   function saveOverdue() { try { localStorage.setItem("dash-overdue", String(OVERDUE)); } catch (e) { /* 같음 */ } }
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text != null) { e.textContent = text; } return e; }
@@ -82,6 +89,7 @@
     if (si === -1 && /^[0-3]$/.test(st)) { si = +st; }
     if (si !== -1) { r.step = si; }
     r.stamps[1] = validDate(x.asg); r.stamps[2] = validDate(x.doing); r.stamps[3] = validDate(x.done);
+    r.owner = (x.owner || "").trim().slice(0, 20); // 칸의 담당자와 다르게 직접 고른 담당자(없으면 칸을 따른다)
     return r;
   }
   // 붙여넣은 글: 한 줄에 하나. 앞에 «날짜,» 가 있으면 날짜로 읽는다. (의견 안의 쉼표는 나누지 않는다)
@@ -103,7 +111,7 @@
     var di = colIndex(head, ["날짜", "접수일", "date"]);
     var ix = { cat: colIndex(head, ["칸"]), urg: colIndex(head, ["긴급도"]), reason: colIndex(head, ["이유"]), chk: colIndex(head, ["사람확인"]),
       step: colIndex(head, ["단계"]), asg: colIndex(head, ["배정일"]), doing: colIndex(head, ["처리시작일"]), done: colIndex(head, ["완료일"]),
-      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]) };
+      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]) };
     var out = [];
     table.slice(1).forEach(function (c) {
       var raw = (c[ti] || "").trim();
@@ -459,7 +467,7 @@
       if (r.step === k) { b.setAttribute("aria-current", "step"); }
       b.setAttribute("aria-label", "단계를 " + name + "(으)로 바꾸기");
       b.appendChild(el("span", "dot")); b.appendChild(el("span", "lab", name));
-      if (k === 1 && r.step >= 1 && nameOf(r.cat)) { b.appendChild(el("span", "sub", nameOf(r.cat))); }
+      if (k === 1 && r.step >= 1 && ownerOf(r) !== UNASSIGNED) { b.appendChild(el("span", "sub", ownerOf(r))); }
       b.addEventListener("click", function () { setStep(r, k); render(); });
       s.appendChild(b);
     });
@@ -480,6 +488,13 @@
     }
     sc.addEventListener("change", change); su.addEventListener("change", change);
     box.appendChild(el("span", "k", "칸")); box.appendChild(sc); box.appendChild(el("span", "k", "긴급도")); box.appendChild(su);
+    // 담당자: 칸에 정해 둔 사람이 기본이지만, 이 문장만 다른 사람에게 보낼 수 있다
+    var so = el("select"); so.setAttribute("aria-label", "담당자");
+    var base = el("option", "", "칸에 맞춰 (" + (nameOf(r.cat) || "미지정") + ")"); base.value = ""; so.appendChild(base);
+    knownNames().concat([UNASSIGNED]).forEach(function (n) { var op = el("option", "", n); op.value = n; so.appendChild(op); });
+    so.value = r.owner || "";
+    so.addEventListener("change", function () { r.owner = so.value; render(); });
+    box.appendChild(el("span", "k", "담당자")); box.appendChild(so);
     if (r.chk) {
       var ok = el("button", "btn plain", "확인함"); ok.type = "button";
       ok.addEventListener("click", function () { r.chk = false; render(); });
@@ -498,6 +513,7 @@
     if (r.sens) { t.appendChild(el("span", "chip sens", "민감")); }
     if (isOverdue(r)) { t.appendChild(el("span", "chip over", "접수 후 " + recvAge(r) + "일")); }
     if (r.edited) { t.appendChild(el("span", "chip src", "수정함")); }
+    if (r.owner) { t.appendChild(el("span", "chip src", "담당 " + r.owner)); }
     if (r.src === "규칙") { t.appendChild(el("span", "chip src", "규칙으로 분류")); }
     var ed = el("button", "edit-btn", r.editing ? "접기" : "고치기"); ed.type = "button";
     ed.addEventListener("click", function () { r.editing = !r.editing; render(); });
@@ -609,10 +625,10 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function download() {
-    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도"];
+    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자"];
     var lines = [head.join(",")].concat(ROWS.map(function (r) {
       return [r.date || (r.y + "-" + pad(r.m)), r.text, r.cat, r.urg, r.reason || "", r.chk ? "예" : "", r.sens ? "예" : "", STEPS[r.step],
-        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : ""].map(csvCell).join(",");
+        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || ""].map(csvCell).join(",");
     }));
     saveCSV(lines, "의견함_분류결과.csv");
   }
@@ -659,7 +675,7 @@
   window.Dash = {
     ensure: ensureData,
     data: function () {
-      return { rows: ROWS, cats: cats(), nameOf: nameOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };
+      return { rows: ROWS, cats: cats(), nameOf: nameOf, ownerOf: ownerOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };
     }
   };
 
@@ -736,7 +752,7 @@
   function ownerGroups(rows) {
     var map = {};
     rows.forEach(function (r) {
-      var n = nameOf(r.cat) || UNASSIGNED;
+      var n = ownerOf(r);
       var g = map[n] || (map[n] = { name: n, rows: [], cats: {} });
       g.rows.push(r); g.cats[r.cat] = true;
     });

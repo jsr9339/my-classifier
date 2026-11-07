@@ -266,3 +266,8 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 .inforow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
 .inforow .hint.info { margin: 0; }
 #d-fail { color: var(--muted); }
+
+/* 분류 · 채점을 한 탭에 세로로 쌓는다 */
+#tab-grade { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
+#tab-grade .gh { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+#tab-grade .gh small { font-weight: 400; font-size: 12.5px; color: var(--muted); }

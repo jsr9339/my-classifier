@@ -471,7 +471,7 @@ function loadYear(y) {
     if (r.edited) edited++;
     if (r.m <= 6) { h1++; if (r.urg === "높음") hi1++; } else { h2++; if (r.urg === "높음") hi2++; }
     var d = D.stepDays(r); if (d !== null) { sumD += d; nD++; }
-    var n = D.nameOf(r.cat) || UNASSIGNED, g = grp[n];
+    var n = D.ownerOf(r), g = grp[n];
     if (!g) { g = grp[n] = { n: n, cl: {}, total: 0, done: 0, over: 0, sd: 0, nd: 0 }; order.push(n); }
     g.cl[r.cat] = 1; g.total++; if (r.step === 3) g.done++; if (od) g.over++; if (d !== null) { g.sd += d; g.nd++; }
   });
@@ -488,7 +488,7 @@ function loadYear(y) {
     .map(function (o) {
       var r = o.r, id = hashId((r.date || r.y + "-" + r.m) + "|" + r.text); if (seen[id]) { seen[id]++; id += "_" + seen[id]; } else { seen[id] = 1; }
       var dd = r.date ? parseInt(r.date.slice(8, 10), 10) : 0, p = r.preset;
-      var it = { id: id, d: r.m + "월" + (dd ? " " + dd + "일" : ""), cat: r.cat, owner: D.nameOf(r.cat) || UNASSIGNED, text: r.text, base: p ? p.kind : "확인 전" };
+      var it = { id: id, d: r.m + "월" + (dd ? " " + dd + "일" : ""), cat: r.cat, owner: D.ownerOf(r), text: r.text, base: p ? p.kind : "확인 전" };
       it.cand = p && p.cand ? p.cand : ruleCand(r.text);
       it.sum = p && p.sum ? p.sum : (r.text.length > 16 ? r.text.slice(0, 16) + "…" : r.text);
       if (p && p.tag) { it.tag = p.tag; }
@@ -521,7 +521,7 @@ function render(opt) {
   if (!ys.length) { $("adjwrap").hidden = true; $("ybody").hidden = true; $("noyear").hidden = false; $("years").textContent = ""; return; }
   if (opt && opt.follow && ys.indexOf(DASH.year) !== -1) { YEAR = DASH.year; } // 담당자별 탭에서 고른 연도를 따라간다
   if (ys.indexOf(YEAR) === -1) { YEAR = ys[ys.length - 1]; }
-  LASTMAP = DASH.cats.map(DASH.nameOf).join("|");
+  LASTMAP = DASH.rows.map(DASH.ownerOf).join("|");
   showYear(ys);
 }
 $("chief").addEventListener("input", function () { ST.chief = this.value; save(); });
@@ -541,7 +541,7 @@ $("copy").addEventListener("click", function () {
 function sync(name, year) {
   WHO = name || "";
   if (!YD) { return; }
-  var fresh = window.Dash.data(), map = fresh.cats.map(fresh.nameOf).join("|");
+  var fresh = window.Dash.data(), map = fresh.rows.map(fresh.ownerOf).join("|");
   if (map !== LASTMAP || (year && year !== YEAR)) { if (year) { YEAR = year; } render(); return; }
   if (PICK && WHO && PICK !== WHO) { PICK = ""; }
   buildAdj(); refreshSev(); renderItems();
