@@ -3,7 +3,7 @@
 // 처음 들어 있는 답변은 예시 문구다. 회사의 실제 안내에 맞게 고쳐 쓴다.
 (function () {
   var $ = function (id) { return document.getElementById(id); };
-  var KEY = "auto-v1", COMMON = "공통";
+  var KEY = "auto-v1", COMMON = "공통", STEPS_LABEL = ["접수", "담당자 배정", "처리 중", "처리 완료"];
   var DEFAULTS = [
     { cat: "급여", name: "연말정산 서류", keys: "연말정산, 부양가족", text: "연말정산 서류는 인사팀 연말정산 담당자에게 제출해 주세요. 제출 기한과 방법은 인사팀 공지를 확인해 주세요." },
     { cat: "급여", name: "급여 이체 계좌 변경", keys: "계좌, 이체", text: "급여 이체 계좌를 바꾸려면 통장 사본을 인사팀에 제출해 주세요. 다음 지급일부터 적용돼요." },
@@ -18,7 +18,7 @@
     { cat: "기타", name: "설문 결과 공개", keys: "조사 결과", text: "조사 결과는 집계가 끝나는 대로 사내 공지로 안내돼요." }
   ];
   function fresh() { return DEFAULTS.map(function (a, i) { return { id: "a" + (i + 1), cat: a.cat, name: a.name, keys: a.keys, text: a.text }; }); }
-  var ST = { on: true, list: fresh(), seq: DEFAULTS.length };
+  var ST = { on: true, list: fresh(), seq: DEFAULTS.length, cats: [] }; // cats: 담당자가 더 만든 카테고리
   try {
     var saved = JSON.parse(localStorage.getItem(KEY) || "null");
     if (saved && typeof saved === "object" && Array.isArray(saved.list)) {
@@ -27,11 +27,13 @@
       ST.list.forEach(function (a) { if (!a.cat) { a.cat = byName[a.name] || COMMON; } }); // 카테고리가 없던 예전 답변
     }
   } catch (e) { /* 저장된 값이 없어도 동작해요 */ }
+  ST.cats = Array.isArray(ST.cats) ? ST.cats : [];
   function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* 저장이 막혀도 동작해요 */ } }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text != null) { e.textContent = text; } return e; }
   function norm(s) { return String(s || "").replace(/\s+/g, ""); }
   function keysOf(a) { return String(a.keys || "").split(/[,，、]/).map(function (k) { return norm(k); }).filter(Boolean); }
-  function cats() { return (window.App && window.App.cats && window.App.cats()) || ["급여", "복지", "온보딩", "조직문화", "리더십", "평가", "안전보건", "기타"]; }
+  function siteCats() { return (window.App && window.App.cats && window.App.cats()) || ["급여", "복지", "온보딩", "조직문화", "리더십", "평가", "안전보건", "기타"]; }
+  function cats() { return siteCats().concat(ST.cats.filter(function (c) { return siteCats().indexOf(c) === -1; })); } // 사이트의 칸 + 담당자가 만든 카테고리
 
   // 의견 글에 가장 잘 맞는 답변 하나. 낱말이 길게 맞을수록 점수가 높고, 같은 카테고리(칸)의 답변을 먼저 쓴다. 없으면 null
   function match(text, cat) {
@@ -65,9 +67,15 @@
     ta.addEventListener("change", function () { a.text = ta.value; changed(); }); lt.appendChild(ta); box.appendChild(lt);
     return box;
   }
-  function addAnswer(cat) {
+  function addAnswer(cat, name) {
     ST.seq = (ST.seq || ST.list.length) + 1;
-    ST.list.push({ id: "a" + ST.seq, cat: cat || COMMON, name: "새 답변", keys: "", text: "" }); save(); render();
+    var a = { id: "a" + ST.seq, cat: cat || COMMON, name: name || "새 답변", keys: "", text: "" };
+    ST.list.push(a); save(); render(); return a;
+  }
+  function addCat(name) {
+    name = String(name || "").trim().slice(0, 12);
+    if (!name || name === COMMON || cats().indexOf(name) !== -1) { return false; }
+    ST.cats.push(name); save(); render(); return true;
   }
 
   function render() {
@@ -87,6 +95,23 @@
       if (r.stamps[3]) { t.appendChild(el("span", "chip", "처리 " + r.stamps[3].slice(5))); }
       li.appendChild(t); li.appendChild(el("p", "", r.text)); li.appendChild(el("p", "why", r.note || "")); ul.appendChild(li);
     });
+    // 담당자가 확인해 답변을 더할 문의: 단순 문의인데 맞는 답변이 없는 것
+    var need = rows.filter(function (r) {
+      if (r.auto) { return false; }
+      var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null;
+      return inf && inf.kind === "단순 문의" && !match(r.text, r.cat);
+    }).sort(function (x, y) { return (x.step === 3) - (y.step === 3); });
+    var nl = $("a-need"); nl.textContent = ""; $("a-need-n").textContent = need.length ? need.length + "건" : "";
+    if (!need.length) { nl.appendChild(el("li", "empty", "맞는 답변이 없는 단순 문의가 없어요.")); }
+    need.slice(0, 12).forEach(function (r) {
+      var li = el("li"), t = el("div", "t");
+      t.appendChild(el("span", "chip", r.cat)); t.appendChild(el("span", "chip", STEPS_LABEL[r.step]));
+      li.appendChild(t); li.appendChild(el("p", "", r.text));
+      var b = el("button", "alink add", "이 문의로 답변 만들기"); b.type = "button";
+      b.addEventListener("click", function () { addAnswer(r.cat, r.text.slice(0, 14)); var box = $("a-list"); if (box && box.scrollIntoView) { box.scrollIntoView({ behavior: "smooth", block: "start" }); } });
+      li.appendChild(b); nl.appendChild(li);
+    });
+    if (need.length > 12) { nl.appendChild(el("li", "empty", "나머지 " + (need.length - 12) + "건은 답변을 만들면 줄어들어요.")); }
     // 답변 목록: 카테고리별로 묶어서
     var box = $("a-list"); box.textContent = "";
     cats().concat([COMMON]).forEach(function (c) {
@@ -94,7 +119,13 @@
       var grp = el("div", "agrp"), head = el("div", "agh");
       head.appendChild(el("b", "", c)); head.appendChild(el("span", "agn", mine.length + "개"));
       var add = el("button", "alink add", "+ 답변 추가"); add.type = "button"; add.addEventListener("click", function () { addAnswer(c); });
-      head.appendChild(add); grp.appendChild(head);
+      head.appendChild(add);
+      if (siteCats().indexOf(c) === -1 && c !== COMMON) {
+        var dc = el("button", "alink", "카테고리 지우기"); dc.type = "button"; dc.title = "이 카테고리의 답변은 «공통»으로 옮겨요";
+        dc.addEventListener("click", function () { ST.cats = ST.cats.filter(function (x) { return x !== c; }); ST.list.forEach(function (x) { if (x.cat === c) { x.cat = COMMON; } }); changed(); });
+        head.appendChild(dc);
+      }
+      grp.appendChild(head);
       if (!mine.length) { grp.appendChild(el("p", "fine", "등록된 답변이 없어요.")); }
       mine.forEach(function (a) { grp.appendChild(card(a, cnt)); });
       box.appendChild(grp);
@@ -103,6 +134,10 @@
 
   $("a-on").addEventListener("change", function () { ST.on = this.checked; changed(); });
   $("a-add").addEventListener("click", function () { addAnswer(COMMON); });
+  $("a-addcat").addEventListener("click", function () {
+    var inp = $("a-newcat"), msg = $("a-catmsg");
+    if (addCat(inp.value)) { inp.value = ""; msg.textContent = ""; } else { msg.textContent = "이름을 적어 주세요. 이미 있는 이름은 만들 수 없어요."; }
+  });
   $("a-reset").addEventListener("click", function () {
     var b = this;
     if (b.dataset.ask !== "1") { b.dataset.ask = "1"; b.textContent = "한 번 더 누르면 처음 답변으로 돌아가요"; setTimeout(function () { b.dataset.ask = ""; b.textContent = "처음 답변으로 되돌리기"; }, 2500); return; }

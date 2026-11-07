@@ -405,7 +405,7 @@
   function renderTiles(v) {
     $("d-sum-sub").textContent = v.label + " · 단계를 눌러 바꿔 볼 수 있어요";
     var box = $("d-tiles"); box.textContent = "";
-    [["전체 의견", v.tot, "", ""], ["긴급 높음", v.hi, "hot", ""], ["사람 확인", v.chk, "", ""], ["처리 완료", v.st[3], "", " / " + v.tot]].forEach(function (r) {
+    [["전체 의견", v.tot, "", ""], ["긴급 높음", v.hi, "hot", ""], ["사람 확인", v.chk, "", ""], ["처리 완료" + (v.rows.some(function (r) { return r.auto; }) ? "(자동응답 " + v.rows.filter(function (r) { return r.auto; }).length + " 포함)" : ""), v.st[3], "", " / " + v.tot]].forEach(function (r) {
       var t = el("div", "tile " + r[2]), b = el("b", "", String(r[1]));
       if (r[3]) { b.appendChild(el("small", "", r[3])); }
       t.appendChild(b); t.appendChild(el("span", "", r[0])); box.appendChild(t);
@@ -688,7 +688,7 @@
       prg.appendChild(el("span", "", "진행")); prg.appendChild(bar); prg.appendChild(el("span", "", "완료 " + c[3] + " / " + g.total + " (" + pct + "%)"));
       row.appendChild(prg);
       var na = g.rows.filter(function (r) { return r.auto; }).length;
-      row.appendChild(el("span", "sub3", "처리 완료 " + c[3] + " · 처리 중 " + c[2] + " · 담당자 배정 " + c[1] + " · 접수 " + c[0] + " · 자동응답 " + na));
+      row.appendChild(el("span", "sub3", "처리 완료 " + c[3] + (na ? "(자동응답 " + na + " 포함)" : "") + " · 처리 중 " + c[2] + " · 담당자 배정 " + c[1] + " · 접수 " + c[0]));
       box.appendChild(row);
     });
   }
@@ -932,7 +932,8 @@
       b.appendChild(el("b", "", g.name));
       b.appendChild(el("span", "oc-cats", g === every ? "담당자 " + groups.length + "명 모두" : g.catList.join(" · ")));
       var bar = el("div", "oc-bar"), f = el("i"); f.style.width = (g.total ? g.done / g.total * 100 : 0) + "%"; bar.appendChild(f); b.appendChild(bar);
-      b.appendChild(el("span", "oc-line", "처리 " + g.done + " / " + g.total));
+      var naC = g.rows.filter(function (r) { return r.auto; }).length;
+      b.appendChild(el("span", "oc-line", "처리 " + g.done + " / " + g.total + (naC ? " (자동응답 " + naC + " 포함)" : "")));
       var tags = el("div", "oc-tags");
       if (g.over) { tags.appendChild(el("span", "chip over", "기한 넘김 " + g.over)); }
       if (g.hi) { tags.appendChild(el("span", "chip hi", "긴급 높음 " + g.hi)); }

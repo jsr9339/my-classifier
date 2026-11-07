@@ -149,7 +149,7 @@ function drawStatic() {
   $("sumsub").textContent = YEAR + "년 " + y.m1 + "월 ~ " + y.m2 + "월";
   var tl = $("sumtiles"); tl.textContent = "";
   tl.appendChild(tile(String(y.total), "", "접수"));
-  tl.appendChild(tile(String(y.done), " / " + y.total, "처리 완료 (" + (y.total ? pct(y.done, y.total) : 0) + "%)"));
+  tl.appendChild(tile(String(y.done), " / " + y.total, "처리 완료 (" + (y.total ? pct(y.done, y.total) : 0) + "%)" + (y.auto ? " · 자동응답 " + y.auto + " 포함" : "")));
   tl.appendChild(tile(String(y.hi), "", "긴급 높음 (처리 완료 " + y.hiDone + " · " + (y.hi ? pct(y.hiDone, y.hi) : 0) + "%)", true));
   tl.appendChild(tile(String(y.over), "", "기한 넘김", true));
   tl.appendChild(tile(y.avg === null ? "-" : y.avg.toFixed(1), y.avg === null ? "" : "일", "처리까지 평균"));
@@ -333,7 +333,7 @@ function loadYear(y) {
   var D = DASH, rows = D.rows.filter(function (r) { return r.y === y && r.cat && r.urg; }), URG = ["높음", "보통", "낮음"];
   MONTHS = {}; for (var m = 1; m <= 12; m++) { MONTHS[m] = [0, 0, 0]; }
   CATS = {}; D.cats.forEach(function (c) { CATS[c] = [0, 0, 0, 0]; });
-  var grp = {}, order = [], sumD = 0, nD = 0, hi = 0, hiDone = 0, over = 0, done = 0, h1 = 0, h2 = 0, hi1 = 0, hi2 = 0, open = [0, 0, 0], edited = 0, m1 = 12, m2 = 1;
+  var grp = {}, order = [], sumD = 0, nD = 0, hi = 0, hiDone = 0, over = 0, done = 0, h1 = 0, h2 = 0, hi1 = 0, hi2 = 0, open = [0, 0, 0], edited = 0, autoN = 0, m1 = 12, m2 = 1;
   rows.forEach(function (r) {
     MONTHS[r.m][URG.indexOf(r.urg)]++;
     if (r.m < m1) m1 = r.m; if (r.m > m2) m2 = r.m;
@@ -343,6 +343,7 @@ function loadYear(y) {
     if (r.step === 3) done++; else open[r.step]++;
     if (od) over++;
     if (r.edited) edited++;
+    if (r.auto) autoN++;
     if (r.m <= 6) { h1++; if (r.urg === "높음") hi1++; } else { h2++; if (r.urg === "높음") hi2++; }
     var d = D.stepDays(r); if (d !== null) { sumD += d; nD++; }
     var n = D.ownerOf(r), g = grp[n];
@@ -352,7 +353,7 @@ function loadYear(y) {
   OWNERS = order.map(function (n) { var g = grp[n]; return { n: n, cats: Object.keys(g.cl).join(" · "), total: g.total, done: g.done, avg: g.nd ? Math.round(g.sd / g.nd * 10) / 10 : null, over: g.over }; })
     .sort(function (a, b) { return b.total - a.total || (a.n < b.n ? -1 : 1); });
   YD = { total: rows.length, done: done, hi: hi, hiDone: hiDone, over: over, avg: nD ? Math.round(sumD / nD * 10) / 10 : null, h1: h1, h2: h2, hi1: hi1, hi2: hi2, open: open,
-    edited: edited, m1: rows.length ? m1 : 1, m2: rows.length ? m2 : 1, od: D.overdue };
+    edited: edited, auto: autoN, m1: rows.length ? m1 : 1, m2: rows.length ? m2 : 1, od: D.overdue };
   TGT[0].actual = rows.length ? pct(done, rows.length) : null;
   TGT[1].actual = hi ? pct(hiDone, hi) : null;
   TGT[2].actual = YD.avg;
