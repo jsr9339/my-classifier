@@ -812,8 +812,11 @@
   }
   function reset() {
     ROWS = []; PENDING = null; DEMO_ON = false;
+    // 문의마다 고쳐 둔 확정 값(문의 성격 · 귀책 등)은 이 브라우저에 남아 있어서, 예시를 다시 불러도 옛 값이 섞인다 → 함께 비운다
+    try { var sv = JSON.parse(localStorage.getItem("settle-v1") || "null"); if (sv && typeof sv === "object") { sv.items = {}; localStorage.setItem("settle-v1", JSON.stringify(sv)); } } catch (e) { /* 저장이 막혀도 동작한다 */ }
+    if (window.Settle && window.Settle.reload) { window.Settle.reload(); }
     var bm = $("d-bk-msg"); if (bm) { bm.textContent = "예시 데이터로 되돌리는 중이에요..."; }
-    loadDemo().then(function () { if (bm) { bm.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건이고, 보낸 자동응답과 처리 단계가 처음 상태예요."; } });
+    loadDemo().then(function () { if (bm) { bm.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건이고, 보낸 자동응답 · 처리 단계 · 문의마다 고친 확정 값이 처음 상태예요(목표값 · 배점 · 답변 목록은 그대로예요)."; } });
   }
   function readFile(file) {
     return file.arrayBuffer().then(function (buf) {
