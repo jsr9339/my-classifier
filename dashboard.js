@@ -231,6 +231,8 @@
     $("d-out").hidden = false;
     $("d-sumbox").hidden = true;
     render();
+    // 새 자료가 들어올 때마다 운영 결산이 문의별 확정 값을 새 자료에 다시 이어 붙이게 한다
+    if (window.Settle && window.Settle.render) { window.Settle.render(); }
     if (go) { $("btn-dash").click(); }
   }
 
@@ -755,7 +757,13 @@
       openDashboard("예시 데이터예요. 지어낸 문장 " + d.rows.length + "개이고, 1~11월에 나눠 담았고, 날짜와 처리 단계도 임의의 값이에요.");
     }).catch(function (e) { f.hidden = false; f.textContent = (e && e.message) || "예시 데이터를 불러오지 못했어요."; });
   }
-  function ensureData() { return ROWS.length ? Promise.resolve() : loadDemo(); }
+  // 예시 데이터는 한 번만 불러온다. (두 번 동시에 불러오면 나중에 끝난 쪽이 앞의 결과를 덮어써서 문의 카드의 확정 값이 비는 일이 있었다)
+  var LOADING = null;
+  function ensureData() {
+    if (ROWS.length) { return Promise.resolve(); }
+    if (!LOADING) { LOADING = loadDemo().then(function () { LOADING = null; }, function () { LOADING = null; }); }
+    return LOADING;
+  }
   // 운영 결산 탭이 같은 자료를 읽어 가도록 내어 준다 (읽기만 한다)
   window.Dash = {
     ensure: ensureData,
