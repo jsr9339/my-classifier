@@ -497,7 +497,8 @@ function buildYears(ys) {
   });
 }
 function showYear(ys) {
-  buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false;
+  buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false; $("adjwrap").hidden = false;
+  $("adjyear").textContent = YEAR + "년 기준이에요(운영 결산 탭에서 고른 해와 같아요). 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
   loadYear(YEAR); PICK = ""; TAB = "";
   drawStatic(); buildTargets(); buildAdj(); buildRubric(); buildNext();
   var un = OWNERS.some(function (o) { return o.n === UNASSIGNED; });
@@ -508,7 +509,7 @@ function showYear(ys) {
 function render() {
   DASH = window.Dash.data();
   var ys = DASH.years.slice().sort(function (a, b) { return a - b; });
-  if (!ys.length) { $("ybody").hidden = true; $("noyear").hidden = false; $("years").textContent = ""; return; }
+  if (!ys.length) { $("adjwrap").hidden = true; $("ybody").hidden = true; $("noyear").hidden = false; $("years").textContent = ""; return; }
   if (ys.indexOf(YEAR) === -1) { YEAR = ys[ys.length - 1]; }
   showYear(ys);
 }

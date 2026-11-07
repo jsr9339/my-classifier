@@ -150,9 +150,35 @@
           <textarea id="o-box" rows="10" readonly hidden aria-label="담당자에게 보낼 글"></textarea>
         </div>
       </div>
+    <div class="settle-scope" id="s-adjwrap" hidden>
+      <details class="fold" id="s-adjfold" open>
+      <summary>귀책 여부 확정 <span class="sub">기한 넘김 · 사례별 중대성(상 · 중 · 하)</span></summary>
+      <div class="fold-body">
+      <p class="src" id="s-adjyear"></p>
+    <h3 style="margin-top:12px">기한 넘김의 귀책</h3>
+      <p class="note" style="margin-top:0">기한 넘김이 담당자 귀책인지 아닌지 정해요. 제도 · 시스템 · 현업 요인처럼 담당자 귀책이 아니면 그 건수만큼 «귀책 아님»으로 빼고, 판단 근거를 적어 두세요. 귀책으로 남은 건수만 점수에 들어가요.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th>귀책 아님으로 뺄 건수</th><th>판단 근거 · 메모</th></tr></thead>
+      <tbody id="s-adj"></tbody>
+    </table></div>
+      <h3>귀책 사례의 중대성</h3>
+      <p class="note" style="margin-top:0">귀책이 확정된 건마다 얼마나 큰 문제였는지 <b>상 · 중 · 하</b>로 적어요. 예) 급여가 나가지 않은 건 → 상, 평가 시스템 오류로 게시가 잘못된 건 → 중. 기준 안: 상 = 급여 · 안전처럼 당사자에게 바로 피해가 간 건, 중 = 업무 지연이나 불편이 생긴 건, 하 = 경미한 건. 점수의 귀책 비율은 아래 가중치를 곱해서 세요. <b>처리 완성도</b>는 그 건을 얼마나 마무리했는지(완전 해결 · 일부 해결 · 미해결), <b>평가 반영</b>은 그 건을 점수에 넣을지(제외하면 귀책 비율에서 빠져요)를 정해요.</p>
+      <div class="edit-h" style="margin:8px 0">
+        <span class="note" style="margin:0">가중치(건 1개를 몇 건으로 셀지):</span>
+        <label>상 <input class="in num" id="s-sw1" type="number" min="0" step="0.5"></label>
+        <label>중 <input class="in num" id="s-sw2" type="number" min="0" step="0.5"></label>
+        <label>하 <input class="in num" id="s-sw3" type="number" min="0" step="0.5"></label>
+      </div>
+      <div class="tscroll"><table>
+        <thead><tr><th>귀책 담당자</th><th>문의</th><th>성격</th><th>중대성</th><th>처리 완성도</th><th>평가 반영</th></tr></thead>
+        <tbody id="s-sevrows"></tbody>
+      </table></div>
+      </div>
+    </details>
+    </div>
     </section>
 
-    <section id="tab-settle" hidden>
+    <section id="tab-settle" class="settle-scope" hidden>
       <div class="settle-in">
     <div class="years" id="s-years" role="group" aria-label="연도"></div>
 
@@ -237,29 +263,7 @@
       <span><i class="k-y"></i>제도·시스템·외부</span><span><i class="k-f"></i>현업 팀장·팀원</span><span><i class="k-u"></i>확인 전</span>
     </div>
     <p class="note">«비율»은 귀책 확정 건수에 중대성 가중치(상 · 중 · 하)를 곱해 더한 값 ÷ max(접수, 20)이에요. 접수가 20건보다 적으면 20건으로 나눠서 한두 건 차이로 크게 흔들리지 않게 해요.</p>
-    <details class="fold" id="s-adjfold">
-      <summary>귀책 여부 확정 <span class="sub">기한 넘김 · 사례별 중대성(상 · 중 · 하)</span></summary>
-      <div class="fold-body">
-    <h3 style="margin-top:12px">기한 넘김의 귀책</h3>
-      <p class="note" style="margin-top:0">기한 넘김이 담당자 귀책인지 아닌지 정해요. 제도 · 시스템 · 현업 요인처럼 담당자 귀책이 아니면 그 건수만큼 «귀책 아님»으로 빼고, 판단 근거를 적어 두세요. 귀책으로 남은 건수만 점수에 들어가요.</p>
-    <div class="tscroll"><table>
-      <thead><tr><th>담당자</th><th>귀책 아님으로 뺄 건수</th><th>판단 근거 · 메모</th></tr></thead>
-      <tbody id="s-adj"></tbody>
-    </table></div>
-      <h3>귀책 사례의 중대성</h3>
-      <p class="note" style="margin-top:0">귀책이 확정된 건마다 얼마나 큰 문제였는지 <b>상 · 중 · 하</b>로 적어요. 예) 급여가 나가지 않은 건 → 상, 평가 시스템 오류로 게시가 잘못된 건 → 중. 기준 안: 상 = 급여 · 안전처럼 당사자에게 바로 피해가 간 건, 중 = 업무 지연이나 불편이 생긴 건, 하 = 경미한 건. 점수의 귀책 비율은 아래 가중치를 곱해서 세요. <b>처리 완성도</b>는 그 건을 얼마나 마무리했는지(완전 해결 · 일부 해결 · 미해결), <b>평가 반영</b>은 그 건을 점수에 넣을지(제외하면 귀책 비율에서 빠져요)를 정해요.</p>
-      <div class="edit-h" style="margin:8px 0">
-        <span class="note" style="margin:0">가중치(건 1개를 몇 건으로 셀지):</span>
-        <label>상 <input class="in num" id="s-sw1" type="number" min="0" step="0.5"></label>
-        <label>중 <input class="in num" id="s-sw2" type="number" min="0" step="0.5"></label>
-        <label>하 <input class="in num" id="s-sw3" type="number" min="0" step="0.5"></label>
-      </div>
-      <div class="tscroll"><table>
-        <thead><tr><th>귀책 담당자</th><th>문의</th><th>성격</th><th>중대성</th><th>처리 완성도</th><th>평가 반영</th></tr></thead>
-        <tbody id="s-sevrows"></tbody>
-      </table></div>
-      </div>
-    </details>
+    <p class="note" style="margin-top:12px">기한 넘김 · 사례별 중대성의 <b>귀책 여부 확정</b>은 «담당자별» 탭 아래에서 해요.</p>
   </section>
   <section class="panel" aria-labelledby="s-h-sc">
     <h2 id="s-h-sc">평가 점수 (예시) <small>현재 자료로 계산 · 참고용</small></h2>
