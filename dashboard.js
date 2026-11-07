@@ -510,6 +510,11 @@
   }
   var KCLS = { "단순 문의": "s", "업무 오류": "e", "응대 문제": "r", "제도·시스템·외부": "y", "현업 팀장·팀원": "f", "확인 전": "u" };
   var EV_FAULT = { "업무 오류": 1, "응대 문제": 1 };
+  function elapsedDays(r) {
+    var a = toDate(r.date); if (!a) { return null; }
+    var end = r.step === 3 && toDate(r.stamps[3]) ? toDate(r.stamps[3]) : todayDate();
+    return Math.max(0, Math.round((end - a) / DAY));
+  }
   function evCell(label) { var c = el("div", "ev-cell"); c.appendChild(el("span", "lab", label)); return c; }
   // 처리 여부 · 문의 성격 · 평가 반영을 한 줄에 (문의 성격 · 평가 반영 값은 운영 결산과 같다). 두 칸 아래의 «고치기»로 바로 고친다.
   function evalStrip(r) {
@@ -517,8 +522,22 @@
     if (!inf) { return null; }
     var box = el("div", "ev"), row = el("div", "ev-strip");
     var c1 = evCell("처리 여부"); c1.appendChild(el("span", "val", STEPS[r.step]));
-    var st = r.stamps[r.step] ? r.stamps[r.step].slice(5) + " 기준" : (r.date ? "접수 " + r.date.slice(5) : "날짜 없음");
-    c1.appendChild(el("span", "sub", st)); row.appendChild(c1);
+    // 기준일: 처리 중까지는 오늘, 처리 완료하면 완료한 날
+    var done = r.step === 3 && toDate(r.stamps[3]);
+    c1.appendChild(el("span", "sub", done ? "완료 " + r.stamps[3].slice(5) : "오늘 " + dstr(todayDate()).slice(5) + " 기준")); row.appendChild(c1);
+    // 경과 일수: 접수일부터 기준일까지. 빠름 1일 이내 · 보통 OVERDUE일 이내 · 그보다 길면 기한 넘김
+    var c1b = evCell("경과 일수"), n = elapsedDays(r);
+    if (n === null) { c1b.appendChild(el("span", "val", "-")); c1b.appendChild(el("span", "sub", "접수 날짜가 없어요")); }
+    else {
+      c1b.appendChild(el("span", "val", n + "일"));
+      var scale = el("div", "pace"), cur = n <= 1 ? 0 : n <= OVERDUE ? 1 : 2;
+      [["빠름", "1일"], ["보통", OVERDUE + "일"], ["기한 넘김", OVERDUE + "일 초과"]].forEach(function (p, i) {
+        var s = el("span", "p" + i + (i === cur ? " on" : ""), p[0] + " " + p[1]); s.title = p[0] + " (" + p[1] + ")"; scale.appendChild(s);
+      });
+      c1b.appendChild(scale);
+      c1b.appendChild(el("span", "sub", "접수 " + r.date.slice(5) + (done ? " → 완료 " + r.stamps[3].slice(5) : " → 오늘")));
+    }
+    row.appendChild(c1b);
     var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
     kc.appendChild(dot); kc.appendChild(document.createTextNode(inf.kind)); c2.appendChild(kc);
     c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
