@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="settle.css">
 </head>
 <body>
-<div class="page">
+<div class="page wide">
   <header class="hero">
     <p class="kicker" id="hero-kicker">직원 의견 한 줄, 담당자에게 바로</p>
     <h1 id="hero-title"><span class="b">사내 의견함</span><br>정리 도우미</h1>
@@ -27,6 +27,7 @@
     </div>
     <p id="status" class="status" role="status"></p>
 
+    <div class="split">
     <section id="tab-classify">
       <div id="chat" class="chat" aria-live="polite">
         <div class="sys">의견 한 줄을 보내면 AI가 칸과 긴급도를 알려드려요.<br>결과는 추정이에요.</div>
@@ -61,6 +62,59 @@
         <div class="btns"><button type="button" id="d-map-go" class="btn fill">이 열로 분류 시작</button><button type="button" id="d-map-cancel" class="btn">취소</button></div>
       </div>
     </section>
+    <section id="tab-grade">
+      <h2 class="gh">채점 <small>정답이 있는 문장으로 규칙과 AI의 점수를 재요</small></h2>
+      <p class="hint">정답이 있는 문장 30개로 점수를 매겨요. 단추를 누를 때만 정답 파일을 열어요.</p>
+      <div class="btns">
+        <button type="button" id="btn-score" class="btn">규칙으로 채점</button>
+        <button type="button" id="btn-ai" class="btn fill">AI로 채점</button>
+      </div>
+      <p id="ai-progress" class="progress" role="status" hidden></p>
+
+      <div id="ai-out" hidden>
+        <h2>규칙 · AI 나란히</h2>
+        <table class="cmp">
+          <thead><tr><th scope="col">지표</th><th scope="col">규칙</th><th scope="col">AI</th></tr></thead>
+          <tbody id="cmp-body"></tbody>
+        </table>
+        <p id="ai-cond" class="cond"></p>
+        <button type="button" id="btn-download" class="btn plain">AI 채점 결과 내려받기</button>
+        <h2>AI가 틀린 문장</h2>
+        <ul id="ai-wrong" class="wrong"></ul>
+      </div>
+
+      <div id="grade-result" hidden>
+        <h2>규칙 채점</h2>
+        <div class="card">
+          <p><span class="k">칸 맞은 수</span> <strong id="g-cat"></strong></p>
+          <p><span class="k">긴급도 맞은 수</span> <strong id="g-urg"></strong></p>
+          <p><span class="k">둘 다 맞은 수</span> <strong id="g-both"></strong></p>
+          <p><span class="k">가장 나쁜 실수</span> <strong id="g-worst"></strong></p>
+          <ul id="g-worst-list" class="plain"></ul>
+        </div>
+        <h2>규칙이 틀린 문장</h2>
+        <ul id="g-wrong" class="wrong"></ul>
+      </div>
+      <div class="dpanel my">
+        <h2>내 데이터로 채점 <small>정답이 있는 CSV로 정확도를 재요</small></h2>
+        <p class="hint">첫 줄에 <b>의견, 칸, 긴급도</b> 열 이름이 있는 CSV를 올려 주세요. 최대 100줄까지 채점하고 AI 사용 횟수를 써요. 파일은 서버에 저장하지 않아요.</p>
+        <div class="btns"><label class="btn file" for="m-file">파일 올리기</label><input type="file" id="m-file" accept=".csv,.txt,text/csv,text/plain" hidden></div>
+        <p id="m-prog" class="progress" role="status" hidden></p>
+        <p id="m-note" class="hint" hidden></p>
+        <div id="m-out" hidden>
+          <div class="card">
+            <p><span class="k">칸 정확도</span> <strong id="m-cat"></strong></p>
+            <p><span class="k">긴급도 정확도</span> <strong id="m-urg"></strong></p>
+            <p><span class="k">둘 다 맞은 수</span> <strong id="m-both"></strong></p>
+            <p><span class="k">가장 나쁜 실수</span> <strong id="m-worst"></strong></p>
+          </div>
+          <p id="m-cond" class="cond"></p>
+          <h2>틀린 문장</h2>
+          <ul id="m-wrong" class="wrong"></ul>
+        </div>
+      </div>
+    </section>
+    </div>
 
     <section id="tab-dash" hidden>
       <p id="d-fail" class="hint" hidden></p>
@@ -321,58 +375,6 @@
 </div>
     </section>
 
-    <section id="tab-grade">
-      <h2 class="gh">채점 <small>정답이 있는 문장으로 규칙과 AI의 점수를 재요</small></h2>
-      <p class="hint">정답이 있는 문장 30개로 점수를 매겨요. 단추를 누를 때만 정답 파일을 열어요.</p>
-      <div class="btns">
-        <button type="button" id="btn-score" class="btn">규칙으로 채점</button>
-        <button type="button" id="btn-ai" class="btn fill">AI로 채점</button>
-      </div>
-      <p id="ai-progress" class="progress" role="status" hidden></p>
-
-      <div id="ai-out" hidden>
-        <h2>규칙 · AI 나란히</h2>
-        <table class="cmp">
-          <thead><tr><th scope="col">지표</th><th scope="col">규칙</th><th scope="col">AI</th></tr></thead>
-          <tbody id="cmp-body"></tbody>
-        </table>
-        <p id="ai-cond" class="cond"></p>
-        <button type="button" id="btn-download" class="btn plain">AI 채점 결과 내려받기</button>
-        <h2>AI가 틀린 문장</h2>
-        <ul id="ai-wrong" class="wrong"></ul>
-      </div>
-
-      <div id="grade-result" hidden>
-        <h2>규칙 채점</h2>
-        <div class="card">
-          <p><span class="k">칸 맞은 수</span> <strong id="g-cat"></strong></p>
-          <p><span class="k">긴급도 맞은 수</span> <strong id="g-urg"></strong></p>
-          <p><span class="k">둘 다 맞은 수</span> <strong id="g-both"></strong></p>
-          <p><span class="k">가장 나쁜 실수</span> <strong id="g-worst"></strong></p>
-          <ul id="g-worst-list" class="plain"></ul>
-        </div>
-        <h2>규칙이 틀린 문장</h2>
-        <ul id="g-wrong" class="wrong"></ul>
-      </div>
-      <div class="dpanel my">
-        <h2>내 데이터로 채점 <small>정답이 있는 CSV로 정확도를 재요</small></h2>
-        <p class="hint">첫 줄에 <b>의견, 칸, 긴급도</b> 열 이름이 있는 CSV를 올려 주세요. 최대 100줄까지 채점하고 AI 사용 횟수를 써요. 파일은 서버에 저장하지 않아요.</p>
-        <div class="btns"><label class="btn file" for="m-file">파일 올리기</label><input type="file" id="m-file" accept=".csv,.txt,text/csv,text/plain" hidden></div>
-        <p id="m-prog" class="progress" role="status" hidden></p>
-        <p id="m-note" class="hint" hidden></p>
-        <div id="m-out" hidden>
-          <div class="card">
-            <p><span class="k">칸 정확도</span> <strong id="m-cat"></strong></p>
-            <p><span class="k">긴급도 정확도</span> <strong id="m-urg"></strong></p>
-            <p><span class="k">둘 다 맞은 수</span> <strong id="m-both"></strong></p>
-            <p><span class="k">가장 나쁜 실수</span> <strong id="m-worst"></strong></p>
-          </div>
-          <p id="m-cond" class="cond"></p>
-          <h2>틀린 문장</h2>
-          <ul id="m-wrong" class="wrong"></ul>
-        </div>
-      </div>
-    </section>
   </main>
 </div>
 <script src="mask.js"></script>
