@@ -145,6 +145,7 @@
   // 카테고리 필터: 칩을 눌러 체크 · 해제하고, 체크한 카테고리의 문의만 보여 준다 (null = 모두)
   var FLT = { list: null, status: "all" };
   var TABSEL = "전체"; // 답변 목록에서 보고 있는 카테고리 탭
+  var EDIT_ID = null; // 고치는 중인 답변 (한 번에 하나)
   function pass(key, r) { return FLT[key] === null || FLT[key].indexOf(r.cat) !== -1; }
   function filterBar(box, key, list) {
     box.textContent = "";
@@ -177,18 +178,31 @@
     cs.addEventListener("change", function () { a.cat = cs.value; changed(); }); top.appendChild(cs);
     top.appendChild(el("span", "acnt", (cnt[a.name] || 0) + "건 처리"));
     var del = el("button", "alink", "지우기"); del.type = "button";
-    del.addEventListener("click", function () { ST.list = ST.list.filter(function (x) { return x !== a; }); changed(); });
-    top.appendChild(del); box.appendChild(top);
+    del.addEventListener("click", function () { ST.list = ST.list.filter(function (x) { return x !== a; }); if (EDIT_ID === a.id) { EDIT_ID = null; } changed(); });
+    top.appendChild(del);
+    var cl = el("button", "alink add", "닫기"); cl.type = "button"; cl.addEventListener("click", function () { EDIT_ID = null; render(); }); top.appendChild(cl);
+    box.appendChild(top);
     var lk = el("label", "alab", "이런 낱말이 있으면 (쉼표로 나눠요)"), ki = el("input", "ain"); ki.type = "text"; ki.maxLength = 120; ki.value = a.keys; ki.placeholder = "예: 연말정산, 부양가족";
     ki.addEventListener("change", function () { a.keys = ki.value; changed(); }); lk.appendChild(ki); box.appendChild(lk);
     var lt = el("label", "alab", "이렇게 답해요"), ta = el("textarea", "ain"); ta.rows = 3; ta.maxLength = 400; ta.value = a.text; ta.placeholder = "문의자에게 보낼 답변 내용 (실제 이름 · 개인정보는 적지 마세요)";
     ta.addEventListener("change", function () { a.text = ta.value; changed(); }); lt.appendChild(ta); box.appendChild(lt);
     return box;
   }
+  // 답변 한 문항: 이름 · 낱말 · 답변 글을 읽기 좋게 보여 주고, 문항마다 «고치기»로 그 문항만 연다
+  function answerRow(a, cnt) {
+    if (EDIT_ID === a.id) { return card(a, cnt); }
+    var row = el("div", "asum"), top = el("div", "asum-top");
+    top.appendChild(el("b", "", a.name)); top.appendChild(el("span", "acnt", (cnt[a.name] || 0) + "건 처리"));
+    var ed = el("button", "alink add", "고치기"); ed.type = "button"; ed.addEventListener("click", function () { EDIT_ID = a.id; render(); });
+    top.appendChild(ed); row.appendChild(top);
+    row.appendChild(el("span", "ak", a.keys ? "낱말: " + a.keys : "낱말 없음"));
+    row.appendChild(el("span", "at", a.text || "(답변 글이 비어 있어요)"));
+    return row;
+  }
   function addAnswer(cat, name) {
     ST.seq = (ST.seq || ST.list.length) + 1;
     var a = { id: "a" + ST.seq, cat: cat || COMMON, name: name || "새 답변", keys: "", text: "" };
-    ST.list.push(a); TABSEL = a.cat; save(); render(); return a;
+    ST.list.push(a); TABSEL = a.cat; EDIT_ID = a.id; save(); render(); return a; // 새 답변은 바로 고칠 수 있게 열어 준다
   }
   function addCat(name) {
     name = String(name || "").trim().slice(0, 12);
@@ -238,13 +252,8 @@
         if (!mine.length) { return; }
         var grp = el("div", "agrp"), head = el("div", "agh");
         head.appendChild(el("b", "", c)); head.appendChild(el("span", "agn", mine.length + "개"));
-        var go = el("button", "alink add", "고치기"); go.type = "button"; go.addEventListener("click", function () { TABSEL = c; render(); }); head.appendChild(go);
         grp.appendChild(head);
-        mine.forEach(function (a) {
-          var row = el("div", "asum"); row.appendChild(el("b", "", a.name));
-          row.appendChild(el("span", "ak", a.keys ? "낱말: " + a.keys : "낱말 없음"));
-          row.appendChild(el("span", "at", a.text || "(답변 글이 비어 있어요)")); grp.appendChild(row);
-        });
+        mine.forEach(function (a) { grp.appendChild(answerRow(a, cnt)); });
         box.appendChild(grp);
       });
       if (!ST.list.length) { box.appendChild(el("p", "fine", "등록된 답변이 없어요. 카테고리 탭에서 «+ 답변 추가»로 만들어 보세요.")); }
@@ -261,7 +270,7 @@
       }
       grp2.appendChild(head2);
       if (!mine2.length) { grp2.appendChild(el("p", "fine", "이 카테고리에는 등록된 답변이 없어요. «+ 답변 추가»로 만들어 보세요.")); }
-      mine2.forEach(function (a) { grp2.appendChild(card(a, cnt)); });
+      mine2.forEach(function (a) { grp2.appendChild(answerRow(a, cnt)); });
       box.appendChild(grp2);
     }
   }
