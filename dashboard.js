@@ -16,7 +16,7 @@
   var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
   var ROWS = [], SEL = { y: 0, m: 0, filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
-    OSEL = { name: "", filter: "처리 안 된 것", all: false, ms: null }; // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
+    OSEL = { name: "", filter: "전체", all: false, ms: null }; // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
   try { NAMES = JSON.parse(localStorage.getItem("dash-names") || "{}"); } catch (e) { NAMES = {}; }
   try { OVERDUE = Number(localStorage.getItem("dash-overdue")) || 3; } catch (e) { OVERDUE = 3; }
   function saveNames() { try { localStorage.setItem("dash-names", JSON.stringify(NAMES)); } catch (e) { /* 저장이 막혀도 동작은 한다 */ } }
