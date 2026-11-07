@@ -800,11 +800,6 @@
   window.Dash = {
     ensure: ensureData,
     refreshOwner: function () { renderOwner(true); },
-    setCat: function (r, c) { // 자동응답 탭에서 문의의 카테고리(칸)를 바꾼다. 문의 카드의 «칸» 고치기와 같은 규칙이다.
-      if (!r || c === r.cat || cats().indexOf(c) === -1) { return; }
-      if (!r.edited) { r.aiCat = r.cat; r.aiUrg = r.urg; }
-      r.cat = c; r.edited = r.cat !== r.aiCat || r.urg !== r.aiUrg; r.chk = false; render();
-    },
     refresh: function () { render(); }, // 운영 결산이 확정 값을 바꾸거나 처음 준비되면 운영 현황 · 담당자별 화면을 다시 그린다
     data: function () {
       return { rows: ROWS, cats: cats(), nameOf: nameOf, ownerOf: ownerOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };

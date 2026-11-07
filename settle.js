@@ -473,6 +473,15 @@ function evalFor(r) {
   mi.addEventListener("input", function () { ensureEntry(it).memo = mi.value; save(); refreshScores(); err.hidden = true; });
   w.appendChild(f); w.appendChild(err); return w;
 }
-window.Settle = { render: render, sync: sync, info: info, form: formFor, evalForm: evalFor };
+/* 자동응답 탭에서 문의의 성격만 빠르게 바꾼다 (근거 · 총괄자 확인은 담당자별 탭에서 이어서 적는다) */
+function setKind(r, kind) {
+  var it = r._sit; if (!it || KMAP[kind] === undefined) { return; }
+  editItem(it, function (c) {
+    c.kind = kind;
+    if (FAULT_KINDS[kind]) { c.fault = c.fault || it.owner; if (!c.sev) { c.sev = sevOf(it); } } else { c.fault = ""; c.sev = ""; }
+    c.edited = true;
+  });
+}
+window.Settle = { render: render, sync: sync, info: info, form: formFor, evalForm: evalFor, setKind: setKind };
 
 })();
