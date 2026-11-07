@@ -27,7 +27,6 @@
       $("btn-" + n).setAttribute("aria-selected", String(n === name));
     });
     $("tab-grade").hidden = name !== "classify"; // 채점은 분류 탭 옆에 이어서 보인다
-    $("guide").hidden = name !== "classify";
     ["classify", "auto", "dash", "owner", "settle"].forEach(function (n) { $("btn-" + n).tabIndex = n === name ? 0 : -1; }); // 탭 줄은 방향키로 옮긴다
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
