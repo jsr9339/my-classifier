@@ -323,10 +323,7 @@
       var j = e.key === "Home" ? 0 : e.key === "End" ? names.length - 1 : (i + (e.key === "ArrowRight" ? 1 : names.length - 1)) % names.length;
       $("btn-" + names[j]).focus(); showTab(names[j]);
     });
-    // 안내: 닫으면 기억한다
-    var g = $("guide");
-    try { if (localStorage.getItem("guide-open") === "1") { g.open = true; } } catch (e) { /* 저장이 막혀도 동작한다 */ }
-    g.addEventListener("toggle", function () { try { localStorage.setItem("guide-open", g.open ? "1" : "0"); } catch (e) { /* 같음 */ } });
+    // 안내: 새로 열 때마다 접힌 상태로 시작하고, «처음이세요?»를 눌러야 펼쳐진다 (고른 상태를 저장하지 않는다)
   })();
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-auto").addEventListener("click", function () { showTab("auto"); });
