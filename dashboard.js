@@ -476,7 +476,7 @@
     ROWS.forEach(function (r) {
       if (r.auto || r.autoOff || r.step === 3) { return; }
       var inf = window.Settle.info(r); if (!inf || inf.kind !== "단순 문의") { return; }
-      var m = window.Auto.match(r.text); if (!m) { return; }
+      var m = window.Auto.match(r.text, r.cat); if (!m) { return; }
       r.autoPrev = { step: r.step, stamps: r.stamps.slice(), note: r.note || "" };
       setStep(r, 3); r.note = ("[자동응답] " + m.text).slice(0, 300); r.auto = m.name;
       // 자동응답은 바로 답한 것이라 접수 다음 날(늦어도 오늘)에 끝난 것으로 적는다 → 경과 1일(빠름)
