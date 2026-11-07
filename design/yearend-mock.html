@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>의견함 연말 결산</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 배치: 맨 위에 수기 입력 안내, 이어서 한 해 요약 · 운영 점검 · 월별 추이 · 칸별 결산, 그다음 총괄자가 문의 성격을 확정하는 칸, 담당자별 응대 현황, 평가 반영 기준표, 내년 과제, 보고서 문구. 넓은 화면에서는 짝지어 두 칸. */
+:root {
+  --bg: #ffffff;
+  --sky: #e5effb;
+  --card: #f4f4f4;
+  --ink: #090703;
+  --muted: #5d6573;
+  --blue: #0060dc;
+  --on-blue: #ffffff;
+  --lo: #a9c6f0;
+  --hot: #d12f2f;
+  --warn: #8f5410;
+  --warn-bg: #fff3e0;
+  --ok: #1b7f4b;
+  --gray: #b7bdc8;
+  --line: #e2e6ee;
+  --field: #ffffff;
+  --k-s: #b3cdf5; --k-e: #2f6fe0; --k-r: #7a86e8; --k-y: #62c6d6; --k-f: #c3b3f0; --k-u: #d7dce6;
+  --shadow: 0 8px 30px rgba(10, 50, 120, .12);
+  --font-body: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1624; --sky: #16233f; --card: #1a2438; --ink: #f2f5fa; --muted: #9aa7bd; --blue: #6aa4ff; --on-blue: #06122b;
+    --lo: #3f5f98; --hot: #ff8f86; --warn: #f0b36a; --warn-bg: #33270f; --ok: #5fd39b; --gray: #4a5670; --line: #2a3650; --field: #0f1624;
+    --k-s: #3f5f98; --k-e: #6aa4ff; --k-r: #8f9af0; --k-y: #3fa7b8; --k-f: #8a78cc; --k-u: #4a5670;
+    --shadow: 0 8px 30px rgba(0, 0, 0, .4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1624; --sky: #16233f; --card: #1a2438; --ink: #f2f5fa; --muted: #9aa7bd; --blue: #6aa4ff; --on-blue: #06122b;
+  --lo: #3f5f98; --hot: #ff8f86; --warn: #f0b36a; --warn-bg: #33270f; --ok: #5fd39b; --gray: #4a5670; --line: #2a3650; --field: #0f1624;
+  --k-s: #3f5f98; --k-e: #6aa4ff; --k-r: #8f9af0; --k-y: #3fa7b8; --k-f: #8a78cc; --k-u: #4a5670;
+    --shadow: 0 8px 30px rgba(0, 0, 0, .4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg) linear-gradient(var(--sky), var(--bg) 340px) no-repeat; color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.6;
+  padding-block: 0 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+.wrap { max-width: 1040px; margin: 0 auto; }
+.hero { padding: 34px 0 28px; text-align: center; }
+.kicker { margin: 0; font-size: 12.5px; color: var(--muted); }
+h1 { font-size: clamp(27px, 6vw, 36px); font-weight: 900; line-height: 1.35; margin: 6px 0 10px; letter-spacing: -.02em; text-wrap: balance; }
+h1 .b { color: var(--blue); }
+.pill { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--blue); background: var(--bg); border-radius: 999px; padding: 3px 12px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; align-items: stretch; margin-top: 16px; }
+.panel { background: var(--bg); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 16px; min-width: 0; margin-top: 16px; }
+.grid > .panel { margin-top: 0; }
+
+h2 { font-size: 15.5px; font-weight: 800; margin: 0 0 4px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+h2 small { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+h3 { font-size: 14px; font-weight: 800; margin: 18px 0 6px; }
+.src { margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.tile { background: var(--card); border-radius: 14px; padding: 10px 12px; }
+.tile b { display: block; font-size: 26px; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile b small { font-size: 13px; font-weight: 700; color: var(--muted); }
+.tile span { font-size: 12.5px; color: var(--muted); }
+.tile.hot b { color: var(--hot); }
+.line2 { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
+.tscroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+td.n, th.n { text-align: right; }
+td.nm { font-weight: 800; white-space: nowrap; }
+td.sm { font-size: 13px; color: var(--muted); }
+.chip { display: inline-block; border-radius: 999px; padding: 0 10px; font-size: 12.5px; font-weight: 800; line-height: 1.7; white-space: nowrap; }
+.chip.ok { color: var(--ok); border: 1px solid currentColor; }
+.chip.warn { color: var(--warn); border: 1px solid currentColor; }
+.chip.bad { color: var(--hot); border: 1px solid currentColor; }
+.chip.na { color: var(--muted); border: 1px solid currentColor; }
+.chip.blue { color: var(--blue); border: 1px solid currentColor; }
+.note { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.trend { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 14px; height: 188px; align-items: end; margin-top: 12px; }
+.tcol { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; color: var(--muted); min-width: 0; }
+.tnum { font-size: 12px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tbar { width: 100%; max-width: 56px; border-radius: 6px 6px 2px 2px; overflow: hidden; display: block; }
+.tbar i { display: block; }
+.tbar .h { background: var(--hot); } .tbar .m { background: var(--blue); } .tbar .l { background: var(--lo); }
+.tmo { font-size: 12px; }
+.tcol.peak .tmo { color: var(--blue); font-weight: 800; }
+.mini { display: flex; align-items: center; gap: 8px; }
+.mini .bar { flex: 1; min-width: 40px; height: 8px; border-radius: 999px; background: var(--card); overflow: hidden; }
+.mini .bar i { display: block; height: 100%; background: var(--hot); }
+.mix { display: flex; height: 14px; border-radius: 6px; overflow: hidden; min-width: 150px; background: var(--card); }
+.mix i { display: block; height: 100%; }
+.mix .s { background: var(--k-s); } .mix .e { background: var(--k-e); } .mix .r { background: var(--k-r); } .mix .y { background: var(--k-y); } .mix .f { background: var(--k-f); } .mix .u { background: var(--k-u); }
+.mix i + i { box-shadow: inset 1.5px 0 0 var(--bg); }
+.mixn { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.caution { margin-top: 12px; background: var(--warn-bg); border-radius: 14px; padding: 10px 14px; font-size: 13.5px; }
+.caution b { color: var(--warn); }
+.caution ul { margin: 6px 0 0; padding-left: 18px; }
+.caution li { margin: 2px 0; }
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-top: 4px; }
+.def { background: var(--card); border-radius: 14px; padding: 10px 12px; font-size: 13.5px; }
+.def b { display: flex; gap: 6px; align-items: center; margin-bottom: 2px; }
+.def b i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.def p { margin: 0; color: var(--muted); font-size: 13px; }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; counter-reset: st; }
+.steps li { counter-increment: st; background: var(--card); border-radius: 14px; padding: 10px 12px 10px 40px; position: relative; font-size: 13.5px; }
+.steps li::before { content: counter(st); position: absolute; left: 12px; top: 10px; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: var(--on-blue); font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+.late { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.late li { background: var(--card); border-radius: 14px; padding: 9px 12px; }
+.late .t { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 2px; }
+.late .t .chip { background: var(--bg); }
+.late p { margin: 0; font-size: 14px; }
+.next { margin: 0; padding-left: 18px; }
+.next li { margin: 6px 0; font-size: 14px; outline: 0; border-radius: 6px; padding: 1px 4px; }
+.next li:focus { background: var(--card); }
+.btn { font: inherit; font-weight: 800; font-size: 13.5px; border-radius: 999px; padding: 6px 16px; border: 1.5px solid var(--blue); color: var(--blue); background: transparent; cursor: pointer; }
+.btn.fill { background: var(--blue); color: var(--on-blue); }
+.btn.sm { font-size: 12.5px; padding: 3px 12px; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .next li:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.band { display: inline-block; font-weight: 800; border-radius: 999px; padding: 0 12px; line-height: 1.7; font-size: 13px; white-space: nowrap; }
+.band.g1 { color: var(--ok); border: 1px solid currentColor; }
+.band.g2 { color: var(--blue); border: 1px solid currentColor; }
+.band.g3 { color: var(--muted); border: 1px solid currentColor; }
+.band.g4 { color: var(--hot); border: 1px solid currentColor; }
+
+/* 월별 추이는 넓게, 운영 점검표는 옆에 조금 작게 */
+@media (min-width: 880px) { .grid.wide { grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); } }
+.grid.wide .panel table { font-size: 13px; }
+.grid.wide .panel td.n { white-space: nowrap; }
+#targets td.n { white-space: nowrap; }
+#owners td.n { white-space: nowrap; }
+#targets input.num { width: 46px; padding: 2px 6px; }
+.grid.wide input.num { width: 52px; }
+.grid.wide .panel th, .grid.wide .panel td { padding: 7px 6px; }
+.years { display: flex; gap: 6px; justify-content: center; margin: 0 0 10px; }
+.years button { font: inherit; font-size: 13.5px; font-weight: 800; border: 1.5px solid var(--blue); border-radius: 999px; padding: 2px 16px; background: var(--bg); color: var(--blue); cursor: pointer; }
+.years button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+details.fold { margin-top: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+details.fold > summary { cursor: pointer; list-style: none; padding: 10px 14px; font-weight: 800; font-size: 14px; display: flex; gap: 8px; align-items: baseline; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .sub { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+details.fold > summary::after { content: "펼치기 ▾"; margin-left: auto; font-size: 12.5px; color: var(--blue); font-weight: 700; white-space: nowrap; }
+details.fold[open] > summary::after { content: "접기 ▴"; }
+.fold-body { padding: 0 14px 14px; }
+.seg { display: inline-flex; border: 1.5px solid var(--blue); border-radius: 999px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12.5px; font-weight: 700; border: 0; background: transparent; color: var(--blue); padding: 2px 12px; cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+tr.off td:not(:last-child) { opacity: .5; }
+.mixleg { gap: 6px 16px; margin: 12px 0 0; }
+.mixleg span { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); }
+.mixleg i, .flt button i.dot { display: inline-block; width: 11px; height: 11px; border-radius: 4px; margin: 0; }
+.flt button i.dot { border-radius: 50%; margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 0 1.5px var(--bg); }
+i.k-s { background: var(--k-s); } i.k-e { background: var(--k-e); } i.k-r { background: var(--k-r); } i.k-y { background: var(--k-y); } i.k-f { background: var(--k-f); } i.k-u { background: var(--k-u); }
+.kdef { margin: 4px 0 8px; font-size: 13.5px; color: var(--muted); }
+.opanel { margin-top: 6px; border-top: 1px solid var(--line); }
+.items.scroll { max-height: 520px; overflow-y: auto; padding-right: 2px; }
+.items .note { list-style: none; }
+
+/* 수기 입력 칸 */
+.in, select.in, textarea.in { font: inherit; font-size: 13.5px; color: var(--ink); background: var(--field); border: 1.5px dashed var(--blue); border-radius: 10px; padding: 3px 8px; min-width: 0; }
+input.num { width: 64px; text-align: right; font-variant-numeric: tabular-nums; }
+input.wide { width: 100%; }
+textarea.in { width: 100%; margin-top: 10px; line-height: 1.6; padding: 8px 12px; resize: vertical; }
+.edit-h { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.edit-h label { display: flex; gap: 8px; align-items: center; font-weight: 700; font-size: 13.5px; }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 0; }
+.flt { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 10px; }
+.flt button { font: inherit; font-size: 12.5px; font-weight: 700; border: 0; border-radius: 999px; padding: 3px 12px; background: var(--card); color: var(--ink); cursor: pointer; }
+.flt button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.it { background: var(--card); border-radius: 16px; padding: 10px 12px; }
+.it.done { box-shadow: inset 0 0 0 1.5px var(--ok); }
+.it .t { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 3px; }
+.it .t .chip { background: var(--bg); }
+.it p.s { margin: 0; font-size: 14px; }
+.frm { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 10px; margin-top: 10px; align-items: end; }
+.frm label { display: grid; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); min-width: 0; }
+.frm .memo { grid-column: 1 / -1; }
+.frm select.in, .frm input.in { width: 100%; }
+.err { margin: 6px 0 0; font-size: 12.5px; font-weight: 700; color: var(--hot); }
+.okline { margin: 8px 0 0; font-size: 12.5px; color: var(--ok); font-weight: 700; }
+.bad-sum { color: var(--hot); font-weight: 800; }
+</style>
+
+</head>
+<body>
+<main class="wrap">
+  <header class="hero">
+    <p class="kicker">팀별/팀원별 KPI 달성도 확인</p>
+    <h1><span class="b">사내 의견함 운영 결산</span></h1>
+    <div class="years" id="years" role="group" aria-label="연도"></div>
+    <span class="pill">점선 테두리 칸은 총괄자가 직접 입력해요 · 숫자는 예시 데이터 기준</span>
+  </header>
+
+  
+
+  <section class="panel" id="noyear" hidden>
+    <h2 id="noyear-t">자료는 아직 없어요</h2>
+    <p class="src">이 시안의 예시 데이터는 2026년뿐이에요. 실제 도구에서는 연도를 고르면 그 해에 접수한 자료로 아래 화면이 모두 바뀌어요.</p>
+  </section>
+
+  <div id="ybody">
+<section class="panel" aria-labelledby="h-sum">
+    <h2 id="h-sum">한 해 요약 <small>1월 ~ 11월</small></h2>
+    <p class="src">출처: 대시보드와 같은 자료. 접수 100건을 연 전체로 합친 값이에요.</p>
+    <div class="tiles">
+      <div class="tile"><b>100</b><span>접수</span></div>
+      <div class="tile"><b>87<small> / 100</small></b><span>처리 완료 (87%)</span></div>
+      <div class="tile hot"><b>21</b><span>긴급 높음 (처리 완료 14 · 67%)</span></div>
+      <div class="tile hot"><b>7</b><span>기한 넘김</span></div>
+      <div class="tile"><b>7.0<small>일</small></b><span>처리까지 평균</span></div>
+    </div>
+    <p class="line2">상반기 51건에서 하반기 49건으로 줄었지만, 긴급 높음은 10건에서 11건으로 늘었어요.</p>
+  </section>
+  <section class="panel" aria-labelledby="h-mon">
+      <h2 id="h-mon">월별 접수 추이 <small>가장 많은 달 7월 11건</small></h2>
+      <p class="src">출처: 접수일이 있는 문장의 월별 건수.</p>
+      <div class="trend" id="trend"></div>
+      <div class="legend"><span><i style="background:var(--hot)"></i>높음</span><span><i style="background:var(--blue)"></i>보통</span><span><i style="background:var(--lo)"></i>낮음</span></div>
+    </section>
+  <div class="grid">
+<section class="panel" aria-labelledby="h-chk">
+      <h2 id="h-chk">운영 점검표 <small>목표값은 직접 입력해요</small></h2>
+      <p class="src">출처: 처리 단계와 날짜 기록. 목표 대비 실적으로 판정해요.</p>
+      <div class="tscroll"><table>
+        <thead><tr><th>지표</th><th class="n">실적</th><th class="n">목표</th><th>판정</th></tr></thead>
+        <tbody id="targets"></tbody>
+      </table></div>
+      <p class="note">판정: 목표를 채우면 «달성», 가까우면 «주의», 멀면 «미달»이에요. 가까운 정도는 높을수록 좋은 지표는 10%p, 평균 일수는 20%, 기한 넘김은 1건까지예요.</p>
+    </section><section class="panel" aria-labelledby="h-cat">
+      <h2 id="h-cat">칸별 한 해 결산 <small>긴급 높음이 많은 순</small></h2>
+      <p class="src">출처: 칸 · 긴급도 분류(AI 추정 + 사람이 고친 값).</p>
+      <div class="tscroll"><table>
+        <thead><tr><th>칸</th><th class="n">접수</th><th>긴급 높음</th><th class="n">처리율</th><th class="n">기한 넘김</th></tr></thead>
+        <tbody id="cats"></tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="h-it">
+    <h2 id="h-it">문의 성격 확정 <small id="it-sub"></small></h2>
+    <p class="src">총괄자가 문장마다 성격을 고르고, 업무 오류 · 응대 문제는 귀책 담당자와 근거를 남겨요. 인사 담당자의 실수는 «업무 오류», 현업 팀장 · 팀원 때문에 생긴 건은 «현업 팀장·팀원»으로 따로 나눠요. 확정한 건만 평가에 쓰여요. 아래 탭을 눌러 펼쳐 보세요.</p>
+    <div class="edit-h" style="margin:0 0 4px"><label for="chief">확정하는 사람(총괄자) <input class="in" id="chief" type="text" maxlength="20" placeholder="예: 한규리"></label></div>
+    <div class="flt" id="ktabs" role="group" aria-label="문의 성격"></div>
+    <div id="kbody" hidden>
+      <p class="kdef" id="kdef"></p>
+      <div id="kpend" hidden>
+        <h3 id="ct" style="font-size:16px">「확인 전」인 건</h3>
+        <div class="tscroll"><table>
+          <thead><tr><th>담당자</th><th class="n">건수</th><th>어떤 문의인가 (후보 표시)</th><th></th></tr></thead>
+          <tbody id="pend"></tbody>
+        </table></div>
+        <p class="note">문장마다 <b>후보 표시</b>를 달아 두었지만 이것은 참고용이에요. 확정은 총괄자가 해요. 담당자 줄의 «확정하기»를 누르면 아래에 입력 칸이 열려요.</p>
+        <div class="opanel" id="opanel" hidden>
+          <h3 id="pick-h"></h3>
+          <div class="flt" id="subtabs" role="group" aria-label="확정 또는 수정"></div>
+          <p class="note" id="subnote" style="margin-top:0"></p>
+          <ul class="items scroll" id="oitems"></ul>
+        </div>
+      </div>
+      <div id="klist" hidden>
+        <ul class="items scroll" id="kitems"></ul>
+      </div>
+    </div>
+  </section>
+
+<section class="panel" aria-labelledby="h-own">
+    <h2 id="h-own">담당자별 응대 현황 <small>처리율 + 문의 성격 · 점검용</small></h2>
+    <p class="src">출처: 처리 단계 · 날짜(자료 있음), 문의 성격(위에서 확정한 값). 확정할 때마다 바로 바뀌어요.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th>맡은 칸</th><th class="n">접수</th><th class="n">처리율</th><th class="n">평균</th><th class="n">기한 넘김</th><th>문의 성격 (건수)</th><th class="n">귀책 확정</th><th class="n">비율</th></tr></thead>
+      <tbody id="owners"></tbody>
+    </table></div>
+    <div class="legend mixleg" aria-label="색 설명">
+      <span><i class="k-s"></i>단순 문의</span><span><i class="k-e"></i>업무 오류</span><span><i class="k-r"></i>응대 문제</span>
+      <span><i class="k-y"></i>제도·시스템·외부</span><span><i class="k-f"></i>현업 팀장·팀원</span><span><i class="k-u"></i>확인 전</span>
+    </div>
+    <p class="note">«비율»은 귀책 확정 건수에 중대성 가중치(상 · 중 · 하)를 곱해 더한 값 ÷ max(접수, 20)이에요. 접수가 20건보다 적으면 20건으로 나눠서 한두 건 차이로 크게 흔들리지 않게 해요.</p>
+    <details class="fold" id="adjfold">
+      <summary>귀책 여부 확정 <span class="sub">기한 넘김 · 사례별 중대성(상 · 중 · 하)</span></summary>
+      <div class="fold-body">
+    <h3 style="margin-top:12px">기한 넘김의 귀책</h3>
+      <p class="note" style="margin-top:0">기한 넘김이 담당자 귀책인지 아닌지 정해요. 제도 · 시스템 · 현업 요인처럼 담당자 귀책이 아니면 그 건수만큼 «귀책 아님»으로 빼고, 판단 근거를 적어 두세요. 귀책으로 남은 건수만 점수에 들어가요.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th>귀책 아님으로 뺄 건수</th><th>판단 근거 · 메모</th></tr></thead>
+      <tbody id="adj"></tbody>
+    </table></div>
+      <h3>귀책 사례의 중대성</h3>
+      <p class="note" style="margin-top:0">귀책이 확정된 건마다 얼마나 큰 문제였는지 <b>상 · 중 · 하</b>로 적어요. 예) 급여가 나가지 않은 건 → 상, 평가 시스템 오류로 게시가 잘못된 건 → 중. 기준 안: 상 = 급여 · 안전처럼 당사자에게 바로 피해가 간 건, 중 = 업무 지연이나 불편이 생긴 건, 하 = 경미한 건. 점수의 귀책 비율은 아래 가중치를 곱해서 세요. <b>처리 완성도</b>는 그 건을 얼마나 마무리했는지(완전 해결 · 일부 해결 · 미해결), <b>평가 반영</b>은 그 건을 점수에 넣을지(제외하면 귀책 비율에서 빠져요)를 정해요.</p>
+      <div class="edit-h" style="margin:8px 0">
+        <span class="note" style="margin:0">가중치(건 1개를 몇 건으로 셀지):</span>
+        <label>상 <input class="in num" id="sw1" type="number" min="0" step="0.5"></label>
+        <label>중 <input class="in num" id="sw2" type="number" min="0" step="0.5"></label>
+        <label>하 <input class="in num" id="sw3" type="number" min="0" step="0.5"></label>
+      </div>
+      <div class="tscroll"><table>
+        <thead><tr><th>귀책 담당자</th><th>문의</th><th>성격</th><th>중대성</th><th>처리 완성도</th><th>평가 반영</th></tr></thead>
+        <tbody id="sevrows"></tbody>
+      </table></div>
+      </div>
+    </details>
+  </section>
+  <section class="panel" aria-labelledby="h-sc">
+    <h2 id="h-sc">평가 점수 (예시) <small>현재 자료로 계산 · 참고용</small></h2>
+    <p class="src">확정한 문의 성격이 바뀌면 점수도 바로 바뀌어요.</p>
+    <p class="note" style="margin-top:0" id="scnote"></p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th class="n">처리율</th><th class="n">평균 일수</th><th class="n">기한 넘김</th><th class="n">귀책 문의</th><th class="n">합계</th><th class="n">환산(100)</th><th>등급</th><th>귀책 확정 메모</th></tr></thead>
+      <tbody id="scores"></tbody>
+    </table></div>
+
+    <details class="fold" id="rubfold">
+      <summary>평가 반영 기준표 <span class="sub">배점 · 등급 경계는 직접 입력해요</span></summary>
+      <div class="fold-body">
+        <p class="src">지금 자료로 셀 수 있는 항목만 점수로 환산하고, 나머지는 «기록 전»으로 비워 둬요.</p>
+        <div class="tscroll"><table>
+          <thead><tr><th>영역</th><th>지표</th><th>측정 방법</th><th class="n">배점</th><th>점수 기준(배점에 맞춰 계산)</th><th>자료</th></tr></thead>
+          <tbody id="rub"></tbody>
+        </table></div>
+        <p class="note" id="wsum"></p>
+        <div class="edit-h" style="margin-top:10px">
+          <span class="note" style="margin:0">등급 경계(환산 점수):</span>
+          <label>우수 <input class="in num" id="c1" type="number" min="0" max="100"> 이상</label>
+          <label>양호 <input class="in num" id="c2" type="number" min="0" max="100"> 이상</label>
+          <label>보통 <input class="in num" id="c3" type="number" min="0" max="100"> 이상</label>
+          <span class="note" style="margin:0">그 미만은 면담 필요</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="caution">
+      <b>도입 전에 확인하세요</b>
+      <ul>
+        <li>이 기준표로 사람의 평가를 하려면 회사 인사 규정, 평가 기준 공지 절차, 노사 협의가 필요한지 먼저 확인해야 해요.</li>
+        <li>칸마다 건수와 긴급 비율이 달라서(문세아 님 25건 · 긴급 8건, 류하린 님 11건 · 긴급 2건) 점수를 담당자끼리 줄 세우는 용도로 쓰기 어려워요. 등급은 절대 기준으로만 봐요.</li>
+        <li>업무 오류와 응대 문제의 귀책은 AI가 판정하지 않아요. 총괄자가 근거를 보고 정해요.</li>
+      </ul>
+    </div>
+  </section>
+
+<section class="panel" aria-labelledby="h-next">
+      <h2 id="h-next">내년에 볼 것 <small>글을 눌러 직접 고쳐요</small></h2>
+      <p class="src">숫자에서 뽑은 후보예요. 해석과 결정은 인사팀이 해요.</p>
+      <ol class="next" id="next"></ol>
+    </section>
+<section class="panel" aria-labelledby="h-rep">
+      <h2 id="h-rep">연말 보고서 문구 <small>직접 고쳐서 복사해요</small></h2>
+      <p class="src">개인별 점수는 이 문구에 넣지 않아요.</p>
+      <div class="btns" style="margin-top:0"><button class="btn fill" type="button" id="copy">보고서 문구 복사</button><button class="btn" type="button" id="auto">자동 문구로 되돌리기</button></div>
+      <textarea class="in" id="rep" rows="9" aria-label="연말 보고서 문구"></textarea>
+    </section>  </div>
+</main>
+
+<script>
+/* ---------- 예시 데이터 (대시보드 예시 데이터에서 센 값) ---------- */
+var MONTHS = {1:[3,3,1],2:[1,6,1],3:[0,4,5],4:[3,2,3],5:[1,5,4],6:[2,4,3],7:[0,7,4],8:[1,4,5],9:[2,6,2],10:[5,2,2],11:[3,2,4]};
+var CATS = {"안전보건":[13,7,12,0],"조직문화":[15,3,13,2],"복지":[15,2,12,2],"급여":[14,2,13,0],"리더십":[11,2,9,1],"평가":[11,2,9,2],"온보딩":[9,2,8,0],"기타":[12,1,11,0]};
+var LATE = [["9월 2일","평가","평가 이의신청 마감이 오늘인데 신청 페이지가 열리지 않아서 접수를 못 하고 있습니다.",66,"담당자 배정"],
+  ["9월 4일","평가","평가 이의신청 기간이 오늘까지인데 시스템 오류로 제출이 안 돼요.",64,"접수"],
+  ["10월 1일","복지","어린이집 보육 지원금이 이번 달부터 끊겼어. 당장 원비를 못 내게 생겼음.",37,"처리 중"],
+  ["10월 4일","조직문화","팀 단톡방에서 한 직원을 계속 조롱해서 그분이 출근을 못 하고 있어요.",34,"담당자 배정"],
+  ["10월 23일","리더십","본부장이 예산 승인을 한 달째 미뤄서 신제품 출시 준비가 멈췄어요.",15,"접수"],
+  ["11월 1일","조직문화","소문이 퍼져서 한 직원이 사람들 앞에서 모욕을 당했고 지금 일을 못 하고 있어요.",6,"담당자 배정"],
+  ["11월 4일","복지","단체 보험 보장이 끊긴 줄 모르고 어제 병원비를 냈어요. 확인해 주세요.",3,"처리 중"]];
+
+/* 담당자 기본값: 접수, 처리 완료, 평균 처리일, 기한 넘김, 문의 성격 [단순, 업무 오류, 응대 문제, 제도·시스템·외부, 확인 전] */
+var OWNERS = [
+  {n:"문세아", cats:"안전보건 · 기타", total:25, done:23, avg:6.9, over:0, mix:[14,1,0,6,4]},
+  {n:"도하준", cats:"급여",           total:14, done:13, avg:7.1, over:0, mix:[9,0,0,3,2]},
+  {n:"노이든", cats:"온보딩",         total:9,  done:8,  avg:7.0, over:0, mix:[6,0,0,2,1]},
+  {n:"배서윤", cats:"조직문화",       total:15, done:13, avg:7.0, over:2, mix:[8,2,0,3,2]},
+  {n:"윤지안", cats:"복지",           total:15, done:12, avg:6.9, over:2, mix:[9,1,0,3,2]},
+  {n:"남도윤", cats:"리더십",         total:11, done:9,  avg:7.4, over:1, mix:[5,1,0,3,2]},
+  {n:"류하린", cats:"평가",           total:11, done:9,  avg:6.9, over:2, mix:[4,2,0,4,1]}
+];
+/* 문의 100건 (대시보드 예시 문장). base = 처음 값(예시), 확인 전 14건은 후보 표시가 있어요 */
+var ITEMS = [{"id": "i001","d": "1월 3일","cat": "복지","owner": "윤지안","base": "제도·시스템·외부","text": "건강검진 병원 예약이 항상 마감이라 날짜를 못 잡아요."},{"id": "i002","d": "1월 4일","cat": "온보딩","owner": "노이든","base": "업무 오류","text": "사내 시스템 계정이 일주일째 발급되지 않았습니다. 업무를 시작도 못 했어요."},{"id": "i003","d": "1월 14일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "3층 비상구 앞에 박스가 쌓여 있어서 길이 막혀 있어요."},{"id": "i004","d": "1월 18일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "단톡방에서 밤 11시에도 업무 지시가 와요. 퇴근 후에 쉴 수가 없습니다."},{"id": "i005","d": "1월 18일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "사내 카페 영업시간을 좀 늘려주세요."},{"id": "i006","d": "1월 24일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "야간 근무 중 주차장 조명이 꺼져서 사람이 안 보여요. 무서워서 퇴근을 못 하겠어요."},{"id": "i007","d": "1월 26일","cat": "급여","owner": "도하준","base": "확인 전","text": "식대가 두 달째 급여에 반영이 안 됨;;","cand": "업무 오류 후보","sum": "식대가 두 달째 미반영"},{"id": "i008","d": "2월 13일","cat": "리더십","owner": "남도윤","base": "단순 문의","text": "팀 목표를 공유받고 싶어요."},{"id": "i009","d": "2월 14일","cat": "평가","owner": "류하린","base": "현업 팀장·팀원","text": "올해 성과평가 등급이 갑자기 한 단계 내려갔는데 아무도 이유를 안 알려줘요."},{"id": "i010","d": "2월 19일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "탕비실 전기포트에서 탄 냄새가 나고 연기가 올라와요."},{"id": "i011","d": "2월 19일","cat": "평가","owner": "류하린","base": "제도·시스템·외부","text": "승진 심사 기준이 공개되면 좋겠습니다. 한규리 대리는 기준을 몰라서 준비를 못 했대요."},{"id": "i012","d": "2월 20일","cat": "리더십","owner": "남도윤","base": "현업 팀장·팀원","text": "업무 배분이 불공평합니다. 한 팀원에게만 일이 몰려요."},{"id": "i013","d": "2월 21일","cat": "온보딩","owner": "노이든","base": "업무 오류","text": "입사 오리엔테이션에서 들은 복지 내용이 실제랑 달라요."},{"id": "i014","d": "2월 22일","cat": "평가","owner": "류하린","base": "제도·시스템·외부","text": "다면평가 문항이 우리 업무랑 안 맞아서 답하기 애매해."},{"id": "i015","d": "2월 24일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "회의가 오후 6시 이후에 자주 잡혀서 퇴근 계획이 틀어져요."},{"id": "i016","d": "3월 3일","cat": "조직문화","owner": "배서윤","base": "단순 문의","text": "사내 동호회 지원을 확대해 주셨으면 해요."},{"id": "i017","d": "3월 4일","cat": "기타","owner": "문세아","base": "제도·시스템·외부","text": "사내 메신저가 하루에 몇 번씩 끊겨서 업무가 지연돼요."},{"id": "i018","d": "3월 6일","cat": "급여","owner": "도하준","base": "단순 문의","text": "연말정산 서류는 언제까지 내면 되나요?"},{"id": "i019","d": "3월 6일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "사내 도서 대여 서비스가 있는지 궁금합니다."},{"id": "i020","d": "3월 13일","cat": "급여","owner": "도하준","base": "단순 문의","text": "급여 이체 계좌를 바꾸고 싶은데 어떤 서류가 필요한지 알려주세요."},{"id": "i021","d": "3월 13일","cat": "온보딩","owner": "노이든","base": "현업 팀장·팀원","text": "신입에게 멘토가 한 번도 면담을 안 잡아 줬어요."},{"id": "i022","d": "3월 18일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "정수기 필터 교체 시기가 지난 것 같아요."},{"id": "i023","d": "3월 22일","cat": "기타","owner": "문세아","base": "단순 문의","text": "그냥 다 만족합니당 별거없음"},{"id": "i024","d": "3월 23일","cat": "온보딩","owner": "노이든","base": "현업 팀장·팀원","text": "멘토가 배정됐다고 들었는데 연락이 없어요."},{"id": "i025","d": "4월 1일","cat": "온보딩","owner": "노이든","base": "단순 문의","text": "입사 서류 중 건강검진 결과서는 언제까지 내나요?"},{"id": "i026","d": "4월 4일","cat": "기타","owner": "문세아","base": "확인 전","text": "문의드릴 일이 있어 [이메일] 으로 메일을 보냈는데 답이 없어요.","cand": "응대 문제 후보","sum": "이메일 답이 없음"},{"id": "i027","d": "4월 9일","cat": "급여","owner": "도하준","base": "단순 문의","text": "야근 식대 신청 방법이 궁금해요."},{"id": "i028","d": "4월 14일","cat": "급여","owner": "도하준","base": "업무 오류","text": "이번 달 성과급이 지급일이 지났는데도 입금되지 않았어요. 문의해도 답이 없습니다."},{"id": "i029","d": "4월 25일","cat": "복지","owner": "윤지안","base": "제도·시스템·외부","text": "경조사비 신청 절차가 너무 복잡해서 포기했어요."},{"id": "i030","d": "4월 26일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "주차장 바닥에 기름이 새서 미끄러워요. 마주리 과장님이 어제 미끄러져 팔을 다치셨습니다."},{"id": "i031","d": "4월 26일","cat": "리더십","owner": "남도윤","base": "현업 팀장·팀원","text": "우리 팀장님은 칭찬이 너무 인색함ㅋㅋ"},{"id": "i032","d": "4월 28일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "지하 창고 문이 안에서 안 열려서 한 직원이 20분간 갇혔어요."},{"id": "i033","d": "5월 2일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "계단 조명이 나가서 어두운데 어제 한 분이 넘어지셨어요."},{"id": "i034","d": "5월 3일","cat": "복지","owner": "윤지안","base": "제도·시스템·외부","text": "복지몰 결제가 계속 오류가 나서 포인트를 못 씁니다."},{"id": "i035","d": "5월 6일","cat": "안전보건","owner": "문세아","base": "단순 문의","text": "안전 교육 일정을 알려 주세요."},{"id": "i036","d": "5월 9일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "분위기가 넘 경직되있어서 말한마디 하기도 눈치보임"},{"id": "i037","d": "5월 10일","cat": "조직문화","owner": "배서윤","base": "단순 문의","text": "직급 호칭을 '님'으로 통일하면 어떨까요?"},{"id": "i038","d": "5월 14일","cat": "안전보건","owner": "문세아","base": "단순 문의","text": "소화기 위치를 알려 주세요."},{"id": "i039","d": "5월 14일","cat": "조직문화","owner": "배서윤","base": "단순 문의","text": "사내 동호회에 가입하려면 어떻게 하나요?"},{"id": "i040","d": "5월 15일","cat": "기타","owner": "문세아","base": "업무 오류","text": "사내 만족도 조사 설문 링크가 안 열려요."},{"id": "i041","d": "5월 21일","cat": "리더십","owner": "남도윤","base": "확인 전","text": "1:1 면담을 분기에 한 번도 안 해줘요.","cand": "현업 후보","sum": "1:1 면담 없음"},{"id": "i042","d": "5월 22일","cat": "복지","owner": "윤지안","base": "현업 팀장·팀원","text": "육아휴직 복귀했는데 눈치가 보여서 복지 제도를 쓰기가 어렵습니다."},{"id": "i043","d": "6월 7일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "점심시간에도 업무 전화를 받는 게 당연시돼요."},{"id": "i044","d": "6월 9일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "회식 자리에서 특정 직원에게 술을 강요하고 모욕을 줬어요. 그분은 지금 병가 중이에요."},{"id": "i045","d": "6월 10일","cat": "급여","owner": "도하준","base": "단순 문의","text": "갑자기 세금이 평소보다 두 배 넘게 빠져나갔어. 이유 좀 알려줘"},{"id": "i046","d": "6월 11일","cat": "복지","owner": "윤지안","base": "제도·시스템·외부","text": "주차 지원이 없어져서 매달 주차비가 부담됩니다."},{"id": "i047","d": "6월 18일","cat": "평가","owner": "류하린","base": "단순 문의","text": "상반기 평가 일정이 언제 공지되나요?"},{"id": "i048","d": "6월 24일","cat": "복지","owner": "윤지안","base": "제도·시스템·외부","text": "복지포인트로 살 수 있는 품목이 너무 적어요."},{"id": "i049","d": "6월 25일","cat": "안전보건","owner": "문세아","base": "확인 전","text": "복도 바닥이 물에 젖어 있는데 안내 표지가 없어서 어제 두 분이 넘어질 뻔했어요.","cand": "후보 없음","sum": "복도 물기"},{"id": "i050","d": "6월 25일","cat": "평가","owner": "류하린","base": "확인 전","text": "평가 면담은 몇 월에 진행되나요?","cand": "단순 문의 후보","sum": "평가 면담 시기 문의"},{"id": "i051","d": "6월 27일","cat": "리더십","owner": "남도윤","base": "단순 문의","text": "임원 면담 일정을 신청하고 싶습니다."},{"id": "i052","d": "7월 2일","cat": "기타","owner": "문세아","base": "단순 문의","text": "정다온 팀장님께 전달할 서류가 있는데 번호 010-9876-5432 가 맞나요?"},{"id": "i053","d": "7월 2일","cat": "리더십","owner": "남도윤","base": "현업 팀장·팀원","text": "오유진 팀장이 실수를 전부 팀원 탓으로 돌려요."},{"id": "i054","d": "7월 3일","cat": "리더십","owner": "남도윤","base": "단순 문의","text": "팀장 리더십 교육 프로그램이 있는지 문의드립니다."},{"id": "i055","d": "7월 3일","cat": "평가","owner": "류하린","base": "제도·시스템·외부","text": "분기 평가 기준표가 수시로 바뀌어서 혼란스러워요."},{"id": "i056","d": "7월 15일","cat": "기타","owner": "문세아","base": "단순 문의","text": "이 조사 결과는 언제 공개되나요?"},{"id": "i057","d": "7월 18일","cat": "급여","owner": "도하준","base": "확인 전","text": "지난달 성과급이 약속한 금액의 절반만 들어왔다.","cand": "업무 오류 후보","sum": "성과급이 절반만 입금"},{"id": "i058","d": "7월 18일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "회의가 너무 많아서 집중할 시간이 없어요."},{"id": "i059","d": "7월 19일","cat": "급여","owner": "도하준","base": "업무 오류","text": "이번 달 급여명세서에 야근수당이 빠져 있어요. 확인 부탁드립니다."},{"id": "i060","d": "7월 21일","cat": "리더십","owner": "남도윤","base": "단순 문의","text": "임원진이 회사 방향을 좀 더 자주 공유해 주세요."},{"id": "i061","d": "7월 25일","cat": "급여","owner": "도하준","base": "업무 오류","text": "야근수당 계산 기준이 달라서 지난달 금액이 팀원마다 달라요."},{"id": "i062","d": "7월 27일","cat": "기타","owner": "문세아","base": "확인 전","text": "설문 제출 버튼을 눌러도 계속 오류가 나. 세 번째 시도임","cand": "제도·시스템 후보","sum": "설문 제출 오류"},{"id": "i063","d": "8월 2일","cat": "평가","owner": "류하린","base": "제도·시스템·외부","text": "팀장 평가를 익명으로 할 수 있는 제도가 생기면 좋겠습니다."},{"id": "i064","d": "8월 4일","cat": "평가","owner": "류하린","base": "현업 팀장·팀원","text": "팀장이 인사평가 근거를 설명 못 해줘요."},{"id": "i065","d": "8월 5일","cat": "급여","owner": "도하준","base": "단순 문의","text": "급여명세서 비밀번호를 잊어버려서 열어볼 수가 없어요."},{"id": "i066","d": "8월 7일","cat": "평가","owner": "류하린","base": "응대 문제","text": "수습 기간 평가 기준이 뭔지 아무도 안 알려줘."},{"id": "i067","d": "8월 13일","cat": "조직문화","owner": "배서윤","base": "단순 문의","text": "점심시간 외에 쉬는 시간을 따로 써도 되는지 궁금해요."},{"id": "i068","d": "8월 18일","cat": "온보딩","owner": "노이든","base": "확인 전","text": "사원증을 아직 못 받아서 출입할 때마다 불편해요.","cand": "업무 오류 후보","sum": "사원증을 아직 못 받음"},{"id": "i069","d": "8월 18일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "사내 식당 메뉴가 한 달째 똑같아요. 조금만 바꿔주세요."},{"id": "i070","d": "8월 22일","cat": "안전보건","owner": "문세아","base": "단순 문의","text": "소화기 점검일이 언제인지 궁금합니다."},{"id": "i071","d": "8월 24일","cat": "급여","owner": "도하준","base": "업무 오류","text": "퇴직 정산금이 한 달째 입금되지 않아서 대출 상환을 못 하고 있어요."},{"id": "i072","d": "8월 24일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "다른 부서와 협업 요청이 일주일째 답이 없어요."},{"id": "i073","d": "9월 2일","cat": "평가","owner": "류하린","base": "업무 오류","text": "평가 이의신청 마감이 오늘인데 신청 페이지가 열리지 않아서 접수를 못 하고 있습니다."},{"id": "i074","d": "9월 3일","cat": "안전보건","owner": "문세아","base": "제도·시스템·외부","text": "에어컨 바람이 직접 얼굴로 와서 목이 아파요. 자리를 옮기고 싶어요."},{"id": "i075","d": "9월 4일","cat": "평가","owner": "류하린","base": "업무 오류","text": "평가 이의신청 기간이 오늘까지인데 시스템 오류로 제출이 안 돼요."},{"id": "i076","d": "9월 6일","cat": "온보딩","owner": "노이든","base": "업무 오류","text": "온보딩 교육 영상 중 일부가 재생이 안 돼요."},{"id": "i077","d": "9월 7일","cat": "급여","owner": "도하준","base": "현업 팀장·팀원","text": "정다온 팀장님이 약속한 인센티브가 급여에 안 들어왔는데 팀장님은 모른다고만 하세요."},{"id": "i078","d": "9월 9일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "가족 상조 지원 신청 절차가 궁금합니다."},{"id": "i079","d": "9월 11일","cat": "기타","owner": "문세아","base": "제도·시스템·외부","text": "사내 메신저 알림이 안 와서 업무 요청을 놓칠 때가 있어요."},{"id": "i080","d": "9월 11일","cat": "급여","owner": "도하준","base": "단순 문의","text": "연말정산 때 부양가족 등록 서류는 어디에 내나요?"},{"id": "i081","d": "9월 12일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "회식 참석을 사실상 강요하는 분위기가 힘들어요."},{"id": "i082","d": "9월 12일","cat": "조직문화","owner": "배서윤","base": "현업 팀장·팀원","text": "부서끼리 서로 말을 안 해서 일이 자꾸 막혀."},{"id": "i083","d": "10월 1일","cat": "복지","owner": "윤지안","base": "확인 전","text": "어린이집 보육 지원금이 이번 달부터 끊겼어. 당장 원비를 못 내게 생겼음.","cand": "업무 오류 후보","sum": "보육 지원금이 끊김"},{"id": "i084","d": "10월 4일","cat": "조직문화","owner": "배서윤","base": "확인 전","text": "팀 단톡방에서 한 직원을 계속 조롱해서 그분이 출근을 못 하고 있어요. (접수 후 34일)","cand": "응대 문제 후보","sum": "단톡방 조롱","tag": "응대 지연 후보, 접수 후 34일"},{"id": "i085","d": "10월 6일","cat": "급여","owner": "도하준","base": "단순 문의","text": "연차수당 계산이 맞는지 모르겠어요. 계산식을 보여주세요."},{"id": "i086","d": "10월 6일","cat": "복지","owner": "윤지안","base": "업무 오류","text": "가족 의료비 지원을 신청했는데 한 달째 처리 중이라고만 나와요."},{"id": "i087","d": "10월 13일","cat": "온보딩","owner": "노이든","base": "업무 오류","text": "입사 3일째인데 보안 카드가 없어서 사무실 출입을 못 하고 있어요."},{"id": "i088","d": "10월 23일","cat": "리더십","owner": "남도윤","base": "확인 전","text": "본부장이 예산 승인을 한 달째 미뤄서 신제품 출시 준비가 멈췄어요.","cand": "현업 후보","sum": "예산 승인 지연"},{"id": "i089","d": "10월 24일","cat": "기타","owner": "문세아","base": "단순 문의","text": "회사 소식 메일이 너무 많이 와요."},{"id": "i090","d": "10월 24일","cat": "리더십","owner": "남도윤","base": "현업 팀장·팀원","text": "본부장이 바뀐 뒤로 승인 결재가 한 달씩 걸려서 계약이 진행이 안 되고 있습니다."},{"id": "i091","d": "10월 27일","cat": "기타","owner": "문세아","base": "단순 문의","text": "회사 주소가 바뀌었는지 확인하고 싶어요."},{"id": "i092","d": "11월 1일","cat": "안전보건","owner": "문세아","base": "확인 전","text": "정수기 물이 미지근하고 맛이 이상해요.","cand": "후보 없음","sum": "정수기 물맛"},{"id": "i093","d": "11월 1일","cat": "조직문화","owner": "배서윤","base": "확인 전","text": "소문이 퍼져서 한 직원이 사람들 앞에서 모욕을 당했고 지금 일을 못 하고 있어요.","cand": "현업 후보","sum": "모욕 소문"},{"id": "i094","d": "11월 1일","cat": "기타","owner": "문세아","base": "제도·시스템·외부","text": "사내 인터넷이 전 층에서 끊겨서 고객 응대를 못 하고 있어요."},{"id": "i095","d": "11월 3일","cat": "기타","owner": "문세아","base": "단순 문의","text": "조사 문항이 너무 많아서 중간에 지쳤어요."},{"id": "i096","d": "11월 4일","cat": "복지","owner": "윤지안","base": "확인 전","text": "단체 보험 보장이 끊긴 줄 모르고 어제 병원비를 냈어요. 확인해 주세요.","cand": "업무 오류 후보","sum": "단체 보험 보장이 끊김"},{"id": "i097","d": "11월 5일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "휴게실에 안마의자 하나 더 들여주세요~"},{"id": "i098","d": "11월 6일","cat": "온보딩","owner": "노이든","base": "단순 문의","text": "입사 서류를 어디까지 냈는지 확인하고 싶습니다."},{"id": "i099","d": "11월 6일","cat": "복지","owner": "윤지안","base": "단순 문의","text": "건강검진 예약 방법이 어디에도 안 나와 있어요."},{"id": "i100","d": "11월 6일","cat": "리더십","owner": "남도윤","base": "현업 팀장·팀원","text": "팀장님이 보고를 일일이 메신저로 확인하시는 게 부담돼요."}];
+var KINDS = ["확인 전", "단순 문의", "업무 오류", "응대 문제", "제도·시스템·외부", "현업 팀장·팀원"];
+var KMAP = {"단순 문의":0, "업무 오류":1, "응대 문제":2, "제도·시스템·외부":3, "확인 전":4, "현업 팀장·팀원":5};
+var FAULT_KINDS = {"업무 오류":1, "응대 문제":1};
+
+/* 점수 규칙: 구간마다 배점에 곱하는 비율 */
+var IND = [
+  {k:"rate", area:"처리 성과", name:"처리율", how:"처리 완료 ÷ 접수", w:15, scored:true, bands:"90% 이상 ×1 · 80% 이상 ×0.8 · 70% 이상 ×0.6 · 그 미만 ×0.4", f:function (v) { return v >= 90 ? 1 : v >= 80 ? 0.8 : v >= 70 ? 0.6 : 0.4; }},
+  {k:"days", area:"", name:"처리까지 평균 일수", how:"완료일 − 접수일", w:15, scored:true, bands:"6일 이하 ×1 · 8일 이하 ×0.8 · 10일 이하 ×0.5 · 그 초과 ×0.25", f:function (v) { return v <= 6 ? 1 : v <= 8 ? 0.8 : v <= 10 ? 0.5 : 0.25; }},
+  {k:"over", area:"", name:"기한 넘김", how:"긴급 높음 중 3일 넘게 미처리 (귀책 아님으로 뺀 건수 반영)", w:10, scored:true, bands:"0건 ×1 · 1건 ×0.7 · 2건 ×0.4 · 3건 이상 ×0", f:function (v) { return v === 0 ? 1 : v === 1 ? 0.7 : v === 2 ? 0.4 : 0; }},
+  {k:"mist", area:"응대 품질", name:"귀책 확정 문의 (업무 오류 · 응대 문제)", how:"확정된 귀책 건수(중대성 가중) ÷ max(접수, 20)", w:25, scored:true, bands:"0% ×1 · 3% 이하 ×0.8 · 6% 이하 ×0.56 · 10% 이하 ×0.32 · 그 초과 ×0", f:function (v) { return v === 0 ? 1 : v <= 3 ? 0.8 : v <= 6 ? 0.56 : v <= 10 ? 0.32 : 0; }},
+  {k:"re", area:"", name:"같은 건 재문의율", how:"같은 건으로 다시 접수된 비율", w:15, scored:false, bands:"3% 이하 ×1 · 6% 이하 ×0.75 · 10% 이하 ×0.5 · 그 초과 ×0.2", f:null},
+  {k:"memo", area:"협업 · 기록", name:"처리 메모 작성률", how:"처리 완료 건 중 메모가 있는 비율", w:10, scored:false, bands:"90% 이상 ×1 · 70% 이상 ×0.7 · 그 미만 ×0.3", f:null},
+  {k:"idea", area:"", name:"반복 이슈 개선 제안", how:"연중 제안한 건수", w:10, scored:false, bands:"3건 이상 ×1 · 2건 ×0.7 · 1건 ×0.4 · 없음 ×0", f:null}
+];
+/* 운영 점검 지표: 실적 (고정) + 목표 (수기) */
+var TGT = [
+  {k:"t1", name:"처리율 (처리 완료 ÷ 접수)", actual:87, unit:"%", def:90, higher:true, near:10},
+  {k:"t2", name:"긴급 높음 처리율", actual:67, unit:"%", def:90, higher:true, near:10},
+  {k:"t3", name:"처리까지 평균 일수", actual:7.0, unit:"일", def:5, higher:false, nearRatio:1.2},
+  {k:"t4", name:"기한 넘김 (긴급 높음, 3일 초과)", actual:7, unit:"건", def:0, higher:false, nearAdd:1}
+];
+var NEXT_DEF = ["안전보건 긴급 높음이 7건으로 가장 많아요. 점검 주기와 신고 경로를 먼저 살펴보세요.",
+  "평가 이의신청 시스템 오류가 9월에 두 번 접수됐고 둘 다 기한을 넘겼어요. 마감 전 점검을 정해 두세요.",
+  "처리되지 않은 의견이 13건이에요(접수 3 · 담당자 배정 5 · 처리 중 5). 배정 뒤에 멈춘 건을 정기적으로 확인하세요."];
+var REPORT_DEF = ["[2026년 사내 의견함 결산 (1~11월)]",
+  "- 접수 100건, 처리 완료 87건(87%). 처리까지 평균 7.0일이 걸렸어요.",
+  "- 긴급 높음 21건 중 14건(67%)을 처리했고, 접수 후 3일을 넘겨 처리되지 않은 건이 7건 남아 있어요.",
+  "- 상반기 51건, 하반기 49건이에요. 긴급 높음은 10건에서 11건으로 늘었어요.",
+  "- 칸별로는 조직문화 · 복지 15건, 급여 14건, 안전보건 13건 순이에요. 안전보건은 13건 중 7건이 긴급 높음이에요.",
+  "- 처리되지 않은 의견은 13건(접수 3 · 담당자 배정 5 · 처리 중 5)이에요.",
+  "- 내년에 볼 것: 안전보건 점검 주기, 평가 이의신청 시스템 마감 전 점검, 배정 뒤 멈춘 건의 정기 확인",
+  "※ 분류는 AI의 추정이며, 사람이 확인한 뒤 보고에 사용해 주세요."].join("\n");
+
+/* ---------- 입력 상태 (이 브라우저에 저장) ---------- */
+var KEY = "yearend-mock-v2";
+function defaults() {
+  var w = {}; IND.forEach(function (i) { w[i.k] = i.w; });
+  var t = {}; TGT.forEach(function (x) { t[x.k] = x.def; });
+  var adj = {}; OWNERS.forEach(function (o) { adj[o.n] = { ex: o.n === "류하린" ? 2 : 0, memo: o.n === "류하린" ? "평가 시스템 오류 2건은 귀책 아님" : (o.over ? "기한 넘김 원인 확인 전" : "") }; });
+  return { chief: "", items: {}, targets: t, weights: w, cut: [90, 75, 60], sevw: { "상": 2, "중": 1, "하": 0.5 }, adj: adj, next: NEXT_DEF.slice(), report: null };
+}
+var ST = defaults();
+(function () {
+  try {
+    var s = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (s && typeof s === "object") { Object.keys(ST).forEach(function (k) { if (s[k] !== undefined) ST[k] = s[k]; }); }
+  } catch (e) { /* 저장된 값이 없어도 동작해요 */ }
+})();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* 저장이 막혀도 동작해요 */ } }
+
+function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function $(id) { return document.getElementById(id); }
+function pct(a, b) { return Math.round(a / b * 100); }
+function num(v, d) { var n = parseFloat(v); return isNaN(n) ? d : n; }
+function today() { var n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }
+function gradeOf(s) { var c = ST.cut; return s >= c[0] ? ["우수", "g1"] : s >= c[1] ? ["양호", "g2"] : s >= c[2] ? ["보통", "g3"] : ["면담 필요", "g4"]; }
+function ownerOfItem(it) { return it.owner; }
+
+/* ---------- 파생 값 계산: 확정한 문의가 담당자별 값에 더해져요 ---------- */
+function kindOf(it) { var c = ST.items[it.id]; return c ? c.kind : it.base; }
+function faultOf(it) { var c = ST.items[it.id]; if (c) { return c.fault || ""; } return FAULT_KINDS[it.base] ? it.owner : ""; }
+var SEVS = ["상", "중", "하"];
+function sevOf(it) {
+  var c = ST.items[it.id]; if (c && c.sev) return c.sev;
+  return /입금|지급|끊|정산|수당|성과급|식대|인센티브/.test(it.text) ? "상" : "중";
+}
+var DONES = ["완전 해결", "일부 해결", "미해결"];
+function doneOf(it) {
+  var c = ST.items[it.id]; if (c && c.done) return c.done;
+  return /답이 없|입금되지 않/.test(it.text) ? "미해결" : /처리 중|한 달째/.test(it.text) ? "일부 해결" : "완전 해결";
+}
+function incOf(it) { var c = ST.items[it.id]; return !(c && c.exc); }
+function editItem(it, fn) {
+  var c = ST.items[it.id];
+  if (!c) { c = { kind: kindOf(it), fault: faultOf(it), memo: "", by: "", at: today() }; ST.items[it.id] = c; }
+  fn(c); save(); refreshAll();
+}
+function compute() {
+  var rows = OWNERS.map(function (o) {
+    return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, sev: { "상": 0, "중": 0, "하": 0 } };
+  });
+  var by = {}; rows.forEach(function (r) { by[r.n] = r; });
+  var confirmed = 0;
+  ITEMS.forEach(function (it) {
+    var k = kindOf(it), r = by[it.owner]; r.mix[KMAP[k]]++;
+    if (k !== "확인 전") confirmed++;
+    if (FAULT_KINDS[k]) { var f = by[faultOf(it)] || r, sv = sevOf(it); if (incOf(it)) { f.fault += num(ST.sevw[sv], 1); f.faultN++; f.sev[sv]++; } else { f.excl++; } }
+  });
+  rows.forEach(function (r) {
+    var adj = ST.adj[r.n] || { ex: 0, memo: "" };
+    r.ex = Math.min(r.overRaw, Math.max(0, num(adj.ex, 0)));
+    r.over = r.overRaw - r.ex; r.memo = adj.memo || "";
+    r.rate = pct(r.done, r.total); r.ratio = r.fault / Math.max(r.total, 20) * 100;
+    r.pts = {
+      rate: Math.round(ST.weights.rate * IND[0].f(r.rate)), days: Math.round(ST.weights.days * IND[1].f(r.avg)),
+      over: Math.round(ST.weights.over * IND[2].f(r.over)), mist: Math.round(ST.weights.mist * IND[3].f(r.ratio))
+    };
+    r.sum = r.pts.rate + r.pts.days + r.pts.over + r.pts.mist;
+    r.scoredW = ST.weights.rate + ST.weights.days + ST.weights.over + ST.weights.mist;
+    r.conv = r.scoredW ? Math.round(r.sum / r.scoredW * 100) : 0;
+    r.hold = r.total < 10;
+  });
+  return { rows: rows, confirmed: confirmed };
+}
+
+/* ---------- 그리기 ---------- */
+function drawStatic() {
+  var box = $("trend"), max = 0, peak = 0; box.textContent = "";
+  for (var m = 1; m <= 11; m++) { var t = MONTHS[m][0] + MONTHS[m][1] + MONTHS[m][2]; if (t > max) { max = t; peak = m; } }
+  for (var m2 = 1; m2 <= 11; m2++) {
+    var v = MONTHS[m2], tot = v[0] + v[1] + v[2], col = el("div", "tcol" + (m2 === peak ? " peak" : ""));
+    col.appendChild(el("span", "tnum", String(tot)));
+    var bar = el("span", "tbar"); bar.style.height = Math.max(6, tot / max * 120) + "px";
+    [["h", v[0]], ["m", v[1]], ["l", v[2]]].forEach(function (p) { if (!p[1]) return; var i = el("i", p[0]); i.style.height = (p[1] / tot * 100) + "%"; bar.appendChild(i); });
+    col.appendChild(bar); col.appendChild(el("span", "tmo", m2 + "월")); box.appendChild(col);
+  }
+  var cb = $("cats"); cb.textContent = "";
+  Object.keys(CATS).sort(function (a, b) { return CATS[b][1] - CATS[a][1] || CATS[b][0] - CATS[a][0]; }).forEach(function (k) {
+    var c = CATS[k], tr = el("tr");
+    tr.appendChild(el("td", "nm", k)); tr.appendChild(el("td", "n", String(c[0])));
+    var td = el("td"), mini = el("div", "mini"), bar2 = el("div", "bar"), f = el("i"); f.style.width = (c[1] / 7 * 100) + "%"; bar2.appendChild(f);
+    mini.appendChild(bar2); mini.appendChild(el("span", "", String(c[1]))); td.appendChild(mini); tr.appendChild(td);
+    tr.appendChild(el("td", "n", pct(c[2], c[0]) + "%")); tr.appendChild(el("td", "n", c[3] ? c[3] + "건" : "-"));
+    cb.appendChild(tr);
+  });
+}
+
+/* 운영 점검표: 목표 입력 칸은 한 번만 만들고, 판정만 바꿔요 */
+var judgeCells = {};
+function judge(x) {
+  var tg = num(ST.targets[x.k], x.def), a = x.actual, ok, near;
+  if (x.higher) { ok = a >= tg; near = a >= tg - x.near; }
+  else if (x.nearRatio) { ok = a <= tg; near = a <= tg * x.nearRatio; }
+  else { ok = a <= tg; near = a <= tg + x.nearAdd; }
+  return ok ? ["달성", "ok"] : near ? ["주의", "warn"] : ["미달", "bad"];
+}
+function buildTargets() {
+  var b = $("targets"); b.textContent = ""; judgeCells = {};
+  TGT.forEach(function (x) {
+    var tr = el("tr"); tr.appendChild(el("td", "", x.name)); tr.appendChild(el("td", "n", x.actual + x.unit));
+    var td = el("td", "n"), inp = el("input", "in num"); inp.type = "number"; inp.step = "any"; inp.value = ST.targets[x.k];
+    inp.setAttribute("aria-label", x.name + " 목표");
+    inp.addEventListener("input", function () { ST.targets[x.k] = inp.value === "" ? x.def : num(inp.value, x.def); save(); refreshJudge(); });
+    td.appendChild(inp); td.appendChild(document.createTextNode(" " + x.unit)); tr.appendChild(td);
+    var jc = el("td"); tr.appendChild(jc); judgeCells[x.k] = jc; b.appendChild(tr);
+  });
+  var tr2 = el("tr"); tr2.appendChild(el("td", "", "사람이 고친 AI 분류")); tr2.appendChild(el("td", "n", "아직 없음")); tr2.appendChild(el("td", "n", "참고"));
+  var c2 = el("td"); c2.appendChild(el("span", "chip na", "확인 전")); tr2.appendChild(c2); b.appendChild(tr2);
+  refreshJudge();
+}
+function refreshJudge() {
+  TGT.forEach(function (x) { var j = judge(x), c = judgeCells[x.k]; c.textContent = ""; c.appendChild(el("span", "chip " + j[1], j[0])); });
+}
+
+/* 문의 성격: 탭 → (확인 전은 담당자별 표 → 확정 · 수정 탭) */
+var TAB = "", PICK = "", SUB = "확정";
+var KCLS = {"단순 문의": "s", "업무 오류": "e", "응대 문제": "r", "제도·시스템·외부": "y", "현업 팀장·팀원": "f", "확인 전": "u"};
+var KDEF = {"확인 전": "아직 정하지 않은 건. 평가에 쓰지 않아요.", "단순 문의": "제도 · 절차를 몰라서 묻거나 요청한 건. 귀책이 없어요.",
+  "업무 오류": "인사 담당자의 실수로 생긴 문의. 급여 오지급 · 누락, 계정 · 사원증 미발급, 계산 기준 오류, 잘못 보낸 안내 같은 것이에요. 누가 그 업무를 했는지 정해요.",
+  "응대 문제": "답이 늦거나 없음, 잘못된 안내로 다시 묻게 된 건.",
+  "제도·시스템·외부": "규정 · 사내 시설 · 전산 · 외부 기관처럼 사람의 실수가 아닌 요인. 담당자 점수에서 빼요.",
+  "현업 팀장·팀원": "현업 팀장 · 팀원의 행동이나 실수에서 생긴 문의(괴롭힘 · 면담 안 함 · 승인 지연 같은 것). 인사 담당자 점수에서 빼고, 해당 부서에 전달해요."};
+function showErr(err, msg) { err.textContent = msg; err.hidden = false; }
+
+/* 문의 한 건 카드. open이면 입력 칸이 바로 열려 있고, 아니면 «수정»을 눌러 열어요 */
+function card(it, open) {
+  var kind = kindOf(it), c = ST.items[it.id];
+  var li = el("li", "it" + (kind !== "확인 전" ? " done" : "")), t = el("div", "t");
+  t.appendChild(el("span", "chip warn", it.cat)); t.appendChild(el("span", "chip na", "칸 담당 " + it.owner));
+  if (kind === "확인 전" && it.cand) t.appendChild(el("span", "chip blue", it.cand));
+  t.appendChild(el("span", kind === "확인 전" ? "chip na" : "chip ok", kind === "확인 전" ? "확인 전" : "확정 · " + kind));
+  li.appendChild(t); li.appendChild(el("p", "s", it.d + " · " + it.text));
+  if (kind !== "확인 전") {
+    var who = c && c.by ? c.by + " 총괄자가 " + c.at + "에 " + (c.edited ? "수정" : "확정") + "했어요." : "처음 값(예시)이에요.";
+    var f0 = faultOf(it); li.appendChild(el("p", "okline", who + (f0 ? " 귀책: " + f0 + " · 중대성: " + sevOf(it) : "") + (c && c.memo ? " · 메모: " + c.memo : "")));
+  }
+  var frm = el("div", "frm"); frm.hidden = !open;
+  var l1 = el("label", "", "문의 성격"), sk = el("select", "in"); KINDS.forEach(function (k) { var o = el("option", "", k); o.value = k; sk.appendChild(o); }); sk.value = kind; l1.appendChild(sk);
+  var l2 = el("label", "", "귀책 담당자 (업무 오류 · 응대 문제)"), sf = el("select", "in");
+  var o0 = el("option", "", "선택"); o0.value = ""; sf.appendChild(o0);
+  OWNERS.forEach(function (o) { var op = el("option", "", o.n); op.value = o.n; sf.appendChild(op); }); sf.value = faultOf(it); l2.appendChild(sf);
+  var l3 = el("label", "memo", "근거 메모 (무엇을 보고 정했는지)"), mi = el("input", "in"); mi.type = "text"; mi.maxLength = 120; mi.value = c ? c.memo || "" : ""; mi.placeholder = "예: 급여 대장을 확인했고 계산 입력 실수로 확인됨"; l3.appendChild(mi);
+  var l2b = el("label", "", "귀책 중대성 (상 · 중 · 하)"), ss = el("select", "in");
+  SEVS.forEach(function (v) { var op = el("option", "", v); op.value = v; ss.appendChild(op); }); ss.value = sevOf(it); l2b.appendChild(ss);
+  frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); frm.appendChild(l3); li.appendChild(frm);
+  var err = el("p", "err"); err.hidden = true; li.appendChild(err);
+  var btns = el("div", "btns"), cf = el("button", "btn sm fill", kind === "확인 전" ? "확정" : "수정 저장"), rv = el("button", "btn sm", "확인 전으로 되돌리기"), ed = el("button", "btn sm", "수정");
+  cf.type = "button"; rv.type = "button"; ed.type = "button"; cf.hidden = !open; rv.hidden = !open || kind === "확인 전"; ed.hidden = open;
+  btns.appendChild(ed); btns.appendChild(cf); btns.appendChild(rv); li.appendChild(btns);
+  function syncFault() { var need = !!FAULT_KINDS[sk.value]; sf.disabled = !need; ss.disabled = !need; if (need && !sf.value) sf.value = it.owner; if (!need) sf.value = ""; }
+  syncFault();
+  sk.addEventListener("change", function () { syncFault(); err.hidden = true; });
+  ed.addEventListener("click", function () { frm.hidden = false; cf.hidden = false; rv.hidden = kind === "확인 전"; ed.hidden = true; });
+  cf.addEventListener("click", function () {
+    var k = sk.value, fault = sf.value, memo = mi.value.trim();
+    if (k === "확인 전") { return showErr(err, "문의 성격을 골라 주세요. 되돌리려면 «확인 전으로 되돌리기»를 눌러요."); }
+    if (!ST.chief.trim()) { return showErr(err, "«확정하는 사람(총괄자)» 이름을 먼저 입력해 주세요. 확정한 사람으로 기록돼요."); }
+    if (FAULT_KINDS[k]) {
+      if (!fault) { return showErr(err, "귀책 담당자를 골라 주세요."); }
+      if (!memo) { return showErr(err, "업무 오류 · 응대 문제는 근거 메모를 적어야 저장할 수 있어요."); }
+    }
+    ST.items[it.id] = { kind: k, fault: fault, sev: FAULT_KINDS[k] ? ss.value : "", memo: memo, by: ST.chief.trim(), at: today(), edited: kind !== "확인 전" }; save(); refreshAll();
+  });
+  rv.addEventListener("click", function () {
+    if (it.base === "확인 전") { delete ST.items[it.id]; } else { ST.items[it.id] = { kind: "확인 전", fault: "", memo: "", by: ST.chief.trim(), at: today() }; }
+    save(); refreshAll();
+  });
+  return li;
+}
+
+function renderItems() {
+  var cnt = {}; KINDS.forEach(function (k) { cnt[k] = 0; }); ITEMS.forEach(function (it) { cnt[kindOf(it)]++; });
+  $("it-sub").textContent = "확인 전 " + cnt["확인 전"] + "건 · 확정 " + (ITEMS.length - cnt["확인 전"]) + "건";
+  var kt = $("ktabs"); kt.textContent = "";
+  KINDS.forEach(function (k) {
+    var b = el("button", "", k + " " + cnt[k]); b.type = "button"; b.setAttribute("aria-pressed", String(TAB === k));
+    var dot = el("i", "dot k-" + KCLS[k]); b.insertBefore(dot, b.firstChild);
+    b.addEventListener("click", function () { TAB = TAB === k ? "" : k; PICK = ""; renderItems(); });
+    kt.appendChild(b);
+  });
+  $("kbody").hidden = !TAB;
+  if (!TAB) return;
+  $("kdef").textContent = TAB + ": " + KDEF[TAB];
+  var isPend = TAB === "확인 전";
+  $("kpend").hidden = !isPend; $("klist").hidden = isPend;
+  if (isPend) { $("ct").textContent = "「확인 전」인 건: " + cnt["확인 전"] + "건"; renderPending(); renderOwnerPanel(); }
+  else {
+    var ul = $("kitems"); ul.textContent = "";
+    var list = ITEMS.filter(function (it) { return kindOf(it) === TAB; });
+    if (!list.length) { ul.appendChild(el("li", "note", "해당하는 문의가 없어요.")); }
+    list.forEach(function (it) { ul.appendChild(card(it, false)); });
+  }
+}
+/* 확인 전 요약표: 담당자마다 남은 건을 한 줄로 */
+function renderPending() {
+  var body = $("pend"); body.textContent = "";
+  OWNERS.forEach(function (o) {
+    var list = ITEMS.filter(function (it) { return it.owner === o.n && kindOf(it) === "확인 전"; });
+    var tr = el("tr"); tr.appendChild(el("td", "nm", o.n)); tr.appendChild(el("td", "n", String(list.length)));
+    var td = el("td");
+    if (!list.length) { td.appendChild(el("span", "chip ok", "모두 확정")); }
+    else {
+      var same = list.length >= 2 && list[0].cand !== "후보 없음" && list.every(function (i) { return i.cand === list[0].cand; });
+      if (same) {
+        td.appendChild(el("b", "", list.map(function (i) { return i.sum; }).join(", ") + " (" + (list.length === 2 ? "둘 다 " : "모두 ") + list[0].cand + ")"));
+      } else {
+        list.forEach(function (i, k) {
+          if (k) { td.appendChild(document.createTextNode(", ")); }
+          if (i.cand === "후보 없음") { td.appendChild(document.createTextNode(i.sum)); }
+          else { td.appendChild(el("b", "", i.sum + "(" + (i.tag || i.cand) + ")")); }
+        });
+      }
+    }
+    tr.appendChild(td);
+    var act = el("td"), btn = el("button", "btn sm" + (PICK === o.n ? " fill" : ""), PICK === o.n ? "닫기" : "확정하기"); btn.type = "button";
+    btn.addEventListener("click", function () { PICK = PICK === o.n ? "" : o.n; SUB = list.length ? "확정" : "수정"; renderItems(); });
+    act.appendChild(btn); tr.appendChild(act); body.appendChild(tr);
+  });
+}
+/* «확정하기»를 누른 담당자: 확정 탭(확인 전 건) · 수정 탭(이미 정해진 건) */
+function renderOwnerPanel() {
+  $("opanel").hidden = !PICK; if (!PICK) return;
+  var mine = ITEMS.filter(function (it) { return it.owner === PICK; });
+  var pend = mine.filter(function (it) { return kindOf(it) === "확인 전"; }), done = mine.filter(function (it) { return kindOf(it) !== "확인 전"; });
+  $("pick-h").textContent = PICK + " 님의 문의 " + mine.length + "건";
+  var st = $("subtabs"); st.textContent = "";
+  [["확정", pend.length], ["수정", done.length]].forEach(function (p) {
+    var b = el("button", "", p[0] + " " + p[1]); b.type = "button"; b.setAttribute("aria-pressed", String(SUB === p[0]));
+    b.addEventListener("click", function () { SUB = p[0]; renderItems(); });
+    st.appendChild(b);
+  });
+  $("subnote").textContent = SUB === "확정" ? "확인 전인 문장이에요. 성격을 골라 확정해요." : "이미 정해진 문장이에요(처음 값 포함). «수정»을 눌러 성격 · 귀책 · 메모를 고쳐요.";
+  var ul = $("oitems"); ul.textContent = "";
+  var list = SUB === "확정" ? pend : done;
+  if (!list.length) { ul.appendChild(el("li", "note", SUB === "확정" ? "확인 전인 건을 모두 확정했어요." : "정해진 건이 없어요.")); }
+  list.forEach(function (it) { ul.appendChild(card(it, SUB === "확정")); });
+}
+
+/* 담당자별 현황 + 귀책 여부 확정 + 점수 */
+function buildAdj() {
+  var b = $("adj"); b.textContent = "";
+  OWNERS.forEach(function (o) {
+    var a = ST.adj[o.n] || (ST.adj[o.n] = { ex: 0, memo: "" });
+    var tr = el("tr"); tr.appendChild(el("td", "nm", o.n));
+    var td = el("td"), n = el("input", "in num"); n.type = "number"; n.min = "0"; n.max = String(o.over); n.value = a.ex; n.setAttribute("aria-label", o.n + " 기한 넘김 중 귀책 아님 건수");
+    n.addEventListener("input", function () { a.ex = num(n.value, 0); save(); refreshAll(); });
+    td.appendChild(n); td.appendChild(document.createTextNode(" 건 (기한 넘김 " + o.over + "건 중)")); tr.appendChild(td);
+    var tm = el("td"), m = el("input", "in wide"); m.type = "text"; m.maxLength = 100; m.value = a.memo || ""; m.placeholder = "예: 평가 시스템 오류라서 귀책 아님";
+    m.setAttribute("aria-label", o.n + " 귀책 판단 근거");
+    m.addEventListener("input", function () { a.memo = m.value; save(); refreshScores(); });
+    tm.appendChild(m); tr.appendChild(tm); b.appendChild(tr);
+  });
+}
+function refreshOwners(data) {
+  var b = $("owners"); b.textContent = "";
+  data.rows.forEach(function (r) {
+    var tr = el("tr");
+    tr.appendChild(el("td", "nm", r.n)); tr.appendChild(el("td", "sm", r.cats)); tr.appendChild(el("td", "n", String(r.total)));
+    tr.appendChild(el("td", "n", r.rate + "%")); tr.appendChild(el("td", "n", r.avg + "일")); tr.appendChild(el("td", "n", r.over ? r.over + "건" : "-"));
+    var td = el("td"), mix = el("div", "mix");
+    [["s", r.mix[0]], ["e", r.mix[1]], ["r", r.mix[2]], ["y", r.mix[3]], ["f", r.mix[5]], ["u", r.mix[4]]].forEach(function (p) { if (!p[1]) return; var i = el("i", p[0]); i.style.width = (p[1] / r.total * 100) + "%"; mix.appendChild(i); });
+    td.appendChild(mix); td.appendChild(el("div", "mixn", "단순 " + r.mix[0] + " · 업무 오류 " + r.mix[1] + " · 응대 " + r.mix[2] + " · 제도·외부 " + r.mix[3] + " · 현업 " + r.mix[5] + " · 확인 전 " + r.mix[4]));
+    tr.appendChild(td); var tf = el("td", "n", r.faultN + "건" + (r.excl ? " (제외 " + r.excl + ")" : "")); tf.title = "상 " + r.sev["상"] + " · 중 " + r.sev["중"] + " · 하 " + r.sev["하"]; tr.appendChild(tf); tr.appendChild(el("td", "n", (Math.round(r.ratio * 10) / 10) + "%"));
+    b.appendChild(tr);
+  });
+}
+function refreshScores(data) {
+  data = data || compute();
+  var b = $("scores"); b.textContent = "";
+  var sw = ST.weights.rate + ST.weights.days + ST.weights.over + ST.weights.mist;
+  $("scnote").textContent = "자료가 있는 항목(배점 합계 " + sw + "점)을 100점으로 환산했어요. 등급: " + ST.cut[0] + "점 이상 우수 · " + ST.cut[1] + "점 이상 양호 · " + ST.cut[2] + "점 이상 보통 · 그 미만 면담 필요. 접수가 10건 미만이면 «보류»예요.";
+  data.rows.forEach(function (r) {
+    var s = el("tr"); s.appendChild(el("td", "nm", r.n));
+    [r.pts.rate, r.pts.days, r.pts.over, r.pts.mist, r.sum, r.conv].forEach(function (v) { s.appendChild(el("td", "n", String(v))); });
+    var g = r.hold ? ["보류", "g3"] : gradeOf(r.conv), tg = el("td"); tg.appendChild(el("span", "band " + g[1], g[0])); s.appendChild(tg);
+    s.appendChild(el("td", "sm", r.memo || "-")); b.appendChild(s);
+  });
+}
+function refreshSev() {
+  var b = $("sevrows"); b.textContent = "";
+  var list = ITEMS.filter(function (it) { return FAULT_KINDS[kindOf(it)]; });
+  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", "귀책이 확정된 건이 없어요."); td0.colSpan = 6; tr0.appendChild(td0); b.appendChild(tr0); return; }
+  list.forEach(function (it) {
+    var inc = incOf(it), tr = el("tr", inc ? "" : "off"); tr.appendChild(el("td", "nm", faultOf(it) || it.owner));
+    tr.appendChild(el("td", "", it.text));
+    var tk = el("td"); tk.appendChild(el("span", "chip blue", kindOf(it))); tr.appendChild(tk);
+    var ts = el("td"), sel = el("select", "in"); sel.setAttribute("aria-label", it.text.slice(0, 12) + " 귀책 중대성");
+    SEVS.forEach(function (v) { var op = el("option", "", v); op.value = v; sel.appendChild(op); }); sel.value = sevOf(it);
+    sel.addEventListener("change", function () { editItem(it, function (c) { c.sev = sel.value; }); });
+    ts.appendChild(sel); tr.appendChild(ts);
+    var td2 = el("td"), dn = el("select", "in"); dn.setAttribute("aria-label", it.text.slice(0, 12) + " 처리 완성도");
+    DONES.forEach(function (v) { var op = el("option", "", v); op.value = v; dn.appendChild(op); }); dn.value = doneOf(it);
+    dn.addEventListener("change", function () { editItem(it, function (c) { c.done = dn.value; }); });
+    td2.appendChild(dn); tr.appendChild(td2);
+    var tg = el("td"), seg = el("div", "seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "평가 반영");
+    [["반영", true], ["제외", false]].forEach(function (p) {
+      var bt = el("button", "", p[0]); bt.type = "button"; bt.setAttribute("aria-pressed", String(inc === p[1]));
+      bt.addEventListener("click", function () { editItem(it, function (c) { if (p[1]) { delete c.exc; } else { c.exc = true; } }); });
+      seg.appendChild(bt);
+    });
+    tg.appendChild(seg); tr.appendChild(tg); b.appendChild(tr);
+  });
+}
+function refreshAll() { var d = compute(); refreshOwners(d); refreshScores(d); refreshSev(); renderItems(); }
+
+/* 기준표: 배점 입력 */
+function buildRubric() {
+  var b = $("rub"); b.textContent = ""; var areaRows = { "처리 성과": 3, "응대 품질": 2, "협업 · 기록": 2 }, bandCells = {};
+  IND.forEach(function (i) {
+    var tr = el("tr");
+    if (i.area) { var a = el("td", "nm", i.area); a.rowSpan = areaRows[i.area]; tr.appendChild(a); }
+    tr.appendChild(el("td", "", i.name)); tr.appendChild(el("td", "sm", i.how));
+    var tw = el("td", "n"), w = el("input", "in num"); w.type = "number"; w.min = "0"; w.max = "100"; w.value = ST.weights[i.k]; w.setAttribute("aria-label", i.name + " 배점");
+    w.addEventListener("input", function () { ST.weights[i.k] = Math.max(0, num(w.value, 0)); save(); paintBands(); refreshScores(); });
+    tw.appendChild(w); tr.appendChild(tw);
+    var bc = el("td", "sm"); tr.appendChild(bc); bandCells[i.k] = bc;
+    var st = el("td"); st.appendChild(el("span", "chip " + (i.scored ? (i.k === "mist" ? "warn" : "ok") : "na"), i.scored ? (i.k === "mist" ? "확정한 건만" : "있음") : "기록 전")); tr.appendChild(st);
+    b.appendChild(tr);
+  });
+  function paintBands() {
+    IND.forEach(function (i) {
+      var w = ST.weights[i.k];
+      bandCells[i.k].textContent = i.bands.replace(/×([0-9.]+)/g, function (m, f) { return Math.round(w * parseFloat(f)) + "점"; });
+    });
+    var total = IND.reduce(function (s, i) { return s + ST.weights[i.k]; }, 0), ws = $("wsum");
+    ws.textContent = ""; ws.appendChild(document.createTextNode("배점 합계 "));
+    var tt = el("b", total === 100 ? "" : "bad-sum", total + "점"); ws.appendChild(tt);
+    ws.appendChild(document.createTextNode(total === 100 ? " (100점이에요)" : " (100점이 아니에요. 합계를 100점으로 맞추면 읽기 쉬워요)"));
+  }
+  paintBands(); buildRubric.paint = paintBands;
+}
+
+/* 내년에 볼 것 · 보고서 문구 */
+function buildNext() {
+  var ol = $("next"); ol.textContent = "";
+  ST.next.forEach(function (t, i) {
+    var li = el("li", "", t); li.contentEditable = "true"; li.setAttribute("role", "textbox"); li.setAttribute("aria-label", "내년에 볼 것 " + (i + 1));
+    li.addEventListener("input", function () { ST.next[i] = li.textContent; save(); });
+    ol.appendChild(li);
+  });
+}
+function reportText() { return ST.report == null ? REPORT_DEF : ST.report; }
+
+/* ---------- 시작 ---------- */
+function init() {
+  PICK = ""; TAB = "";
+  setYear(); drawStatic(); buildTargets(); buildAdj(); buildRubric(); buildNext();
+  $("chief").value = ST.chief; $("sw1").value = ST.sevw["상"]; $("sw2").value = ST.sevw["중"]; $("sw3").value = ST.sevw["하"]; $("c1").value = ST.cut[0]; $("c2").value = ST.cut[1]; $("c3").value = ST.cut[2];
+  $("rep").value = reportText(); refreshAll();
+}
+$("chief").addEventListener("input", function () { ST.chief = this.value; save(); });
+["sw1", "sw2", "sw3"].forEach(function (id, i) {
+  $(id).addEventListener("input", function () { ST.sevw[SEVS[i]] = Math.max(0, num(this.value, 0)); save(); refreshAll(); });
+});
+["c1", "c2", "c3"].forEach(function (id, i) {
+  $(id).addEventListener("input", function () { ST.cut[i] = num(this.value, ST.cut[i]); save(); refreshScores(); });
+});
+$("rep").addEventListener("input", function () { ST.report = this.value; save(); });
+$("auto").addEventListener("click", function () { ST.report = null; save(); $("rep").value = REPORT_DEF; });
+var YEAR = 2026;
+function setYear() {
+  var b = $("years"); b.textContent = "";
+  [2025, 2026].forEach(function (y) {
+    var x = el("button", "", y + "년"); x.type = "button"; x.setAttribute("aria-pressed", String(y === YEAR));
+    x.addEventListener("click", function () { YEAR = y; setYear(); });
+    b.appendChild(x);
+  });
+  $("ybody").hidden = YEAR !== 2026; $("noyear").hidden = YEAR === 2026;
+  $("noyear-t").textContent = YEAR + "년 자료는 아직 없어요";
+}
+$("copy").addEventListener("click", function () {
+  var b = this, fin = function (ok) { b.textContent = ok ? "복사됨" : "아래 글을 직접 복사해 주세요"; setTimeout(function () { b.textContent = "보고서 문구 복사"; }, 1800); };
+  try { navigator.clipboard.writeText($("rep").value).then(function () { fin(true); }, function () { fin(false); }); } catch (e) { fin(false); }
+});
+init();
+</script>
+
+</body>
+</html>
