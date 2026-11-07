@@ -16,7 +16,7 @@
   var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
   var ROWS = [], SEL = { y: 0, m: 0, filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
-    OSEL = { name: "", filter: "처리 안 된 것", all: false };
+    OSEL = { name: "", filter: "처리 안 된 것", all: false, cum: false };
   try { NAMES = JSON.parse(localStorage.getItem("dash-names") || "{}"); } catch (e) { NAMES = {}; }
   try { OVERDUE = Number(localStorage.getItem("dash-overdue")) || 3; } catch (e) { OVERDUE = 3; }
   function saveNames() { try { localStorage.setItem("dash-names", JSON.stringify(NAMES)); } catch (e) { /* 저장이 막혀도 동작은 한다 */ } }
@@ -659,7 +659,7 @@
   window.Dash = {
     ensure: ensureData,
     data: function () {
-      return { rows: ROWS, cats: cats(), nameOf: nameOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years() };
+      return { rows: ROWS, cats: cats(), nameOf: nameOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };
     }
   };
 
@@ -699,10 +699,21 @@
   // ---------- 담당자별 확인 탭 ----------
   // 같은 이름을 적은 칸들은 한 사람으로 묶는다. 예시 데이터일 때만 이름이 미리 들어 있다.
   var DEMO = { "급여": "도하준", "복지": "윤지안", "조직문화": "배서윤", "리더십": "남도윤", "안전보건": "문세아", "온보딩": "노이든", "평가": "류하린", "기타": "문세아" };
-  var UNASSIGNED = "담당자 미지정";
+  var UNASSIGNED = "담당자 미지정", ALL = "전체 보기"; // ALL: 담당자 전체를 한 번에 보는 카드
   var OFILTERS = ["처리 안 된 것", "전체", "긴급 높음", "기한 넘김", "사람 확인", "민감"];
 
   function periodLabel() { return SEL.m ? SEL.y + "년 " + SEL.m + "월" : SEL.y + "년 전체"; }
+  // 담당자별 탭은 «누적»을 고를 수 있다: 1월부터 고른 달까지 모아서 본다
+  function inOwnerPeriod(r) { return r.y === SEL.y && (!SEL.m || (OSEL.cum ? r.m <= SEL.m : r.m === SEL.m)); }
+  function ownerPeriodLabel() { return SEL.m && OSEL.cum ? SEL.y + "년 1~" + SEL.m + "월 누적" : periodLabel(); }
+  function allGroup(groups) {
+    var g = { name: ALL, rows: [], cats: {} };
+    groups.forEach(function (x) { g.rows = g.rows.concat(x.rows); x.catList.forEach(function (c) { g.cats[c] = true; }); });
+    g.total = g.rows.length; g.open = g.rows.filter(function (r) { return r.step < 3; }).length;
+    g.hi = g.rows.filter(function (r) { return r.urg === "높음" && r.step < 3; }).length;
+    g.over = g.rows.filter(isOverdue).length; g.done = g.total - g.open; g.catList = Object.keys(g.cats); g.people = groups.length;
+    return g;
+  }
   function prio(r) { return (isOverdue(r) ? 0 : 4) + (r.urg === "높음" ? 0 : 2) + (r.chk ? 0 : 1); }
   function byPrio(rows) {
     return rows.map(function (r, i) { return { r: r, i: i }; }).sort(function (a, b) { return prio(a.r) - prio(b.r) || a.i - b.i; })
@@ -747,6 +758,8 @@
       if (SEL.m && !ms[SEL.m]) { SEL.m = list[list.length - 1]; }
       SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render();
     };
+    var cum = $("o-cum"); cum.checked = OSEL.cum; cum.disabled = !SEL.m;
+    cum.onchange = function () { OSEL.cum = cum.checked; OSEL.all = false; renderOwner(); };
     var have = monthSet(SEL.y), box = $("o-months"); box.textContent = "";
     for (var m = 0; m <= 12; m++) {
       (function (m) {
@@ -759,11 +772,12 @@
   }
   function renderOwnerCards(groups) {
     var box = $("o-cards"); box.textContent = "";
-    groups.forEach(function (g) {
+    var every = allGroup(groups);
+    [every].concat(groups).forEach(function (g) {
       var b = el("button", "ocard"); b.type = "button";
       b.setAttribute("aria-pressed", String(OSEL.name === g.name));
       b.appendChild(el("b", "", g.name));
-      b.appendChild(el("span", "oc-cats", g.catList.join(" · ")));
+      b.appendChild(el("span", "oc-cats", g === every ? "담당자 " + groups.length + "명 모두" : g.catList.join(" · ")));
       var bar = el("div", "oc-bar"), f = el("i"); f.style.width = (g.total ? g.done / g.total * 100 : 0) + "%"; bar.appendChild(f); b.appendChild(bar);
       b.appendChild(el("span", "oc-line", "처리 " + g.done + " / " + g.total));
       var tags = el("div", "oc-tags");
@@ -793,7 +807,7 @@
   function ownerText(g) {
     var open = byPrio(g.rows.filter(function (r) { return r.step < 3; })), lines = [];
     lines.push((g.name === UNASSIGNED ? "담당자님" : g.name + " 님") + ", 문의 확인 바랍니다.", "");
-    lines.push("[" + periodLabel() + "] 담당 칸: " + g.catList.join(", "));
+    lines.push("[" + ownerPeriodLabel() + "] 담당 칸: " + g.catList.join(", "));
     lines.push("- 전체 " + g.total + "건, 처리 완료 " + g.done + "건, 아직 처리 안 된 것 " + g.open + "건");
     lines.push("- 긴급 높음 " + g.hi + "건(처리 안 된 것 기준), 기한 넘김 " + g.over + "건(접수 후 " + OVERDUE + "일 초과)");
     if (open.length) {
@@ -804,10 +818,11 @@
     return lines.join("\n");
   }
   function renderOwnerDetail(groups) {
-    var g = groups.filter(function (x) { return x.name === OSEL.name; })[0];
-    if (!g) { $("o-detail").hidden = true; return; }
+    var isAll = OSEL.name === ALL, g = isAll ? allGroup(groups) : groups.filter(function (x) { return x.name === OSEL.name; })[0];
+    if (!g || !g.total) { $("o-detail").hidden = true; return; }
     $("o-detail").hidden = false;
-    $("o-title").textContent = g.name + " · " + g.catList.join(" · ");
+    $("o-title").textContent = isAll ? "전체 보기 · 담당자 " + groups.length + "명 모두" : g.name + " · " + g.catList.join(" · ");
+    $("o-copy").hidden = isAll; // 한 사람에게 보낼 글이라서 전체 보기에서는 숨긴다
     var tiles = $("o-tiles"); tiles.textContent = "";
     [["전체", g.total, ""], ["처리 안 된 것", g.open, ""], ["긴급 높음", g.hi, g.hi ? "hot" : ""], ["기한 넘김", g.over, g.over ? "hot" : ""]].forEach(function (r) {
       var t = el("div", "tile " + r[2]); t.appendChild(el("b", "", String(r[1]))); t.appendChild(el("span", "", r[0])); tiles.appendChild(t);
@@ -842,12 +857,14 @@
     var has = ROWS.length > 0;
     $("o-empty").hidden = has; $("o-main").hidden = !has;
     if (!has) { return; }
-    var rows = ROWS.filter(inPeriod), groups = ownerGroups(rows);
-    if (!groups.some(function (g) { return g.name === OSEL.name; })) { OSEL.name = groups.length ? groups[0].name : ""; }
-    $("o-sub").textContent = periodLabel();
+    var rows = ROWS.filter(inOwnerPeriod), groups = ownerGroups(rows);
+    if (OSEL.name !== ALL && !groups.some(function (g) { return g.name === OSEL.name; })) { OSEL.name = groups.length ? groups[0].name : ""; }
+    $("o-sub").textContent = ownerPeriodLabel();
     renderOwnerPeriod(); renderOwnerCards(groups);
     if (!skipNames) { renderOwnerNames(); }
     renderOwnerDetail(groups);
+    // 아래 «문의 성격 · 귀책 확정»이 지금 고른 사람(전체 보기면 모두)만 보여 주도록 알린다
+    if (window.Settle && window.Settle.sync) { window.Settle.sync(OSEL.name === ALL ? "" : OSEL.name, SEL.y); }
   }
   $("o-more").addEventListener("click", function () { OSEL.all = !OSEL.all; renderOwner(); });
   $("o-go").addEventListener("click", function () { $("btn-classify").click(); });

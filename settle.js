@@ -4,7 +4,7 @@
 
 /* ---------- 고른 해의 자료 (운영 현황 자료에서 세요) ---------- */
 var MONTHS = {}, CATS = {}, OWNERS = [], ITEMS = [], YD = null, YEAR = 0, DASH = null;
-var UNASSIGNED = "담당자 미지정";
+var UNASSIGNED = "담당자 미지정", WHO = "", LASTMAP = ""; // WHO: 담당자별 탭에서 고른 사람(비어 있으면 전체)
 var KINDS = ["확인 전", "단순 문의", "업무 오류", "응대 문제", "제도·시스템·외부", "현업 팀장·팀원"];
 var KMAP = {"단순 문의":0, "업무 오류":1, "응대 문제":2, "제도·시스템·외부":3, "확인 전":4, "현업 팀장·팀원":5};
 var FAULT_KINDS = {"업무 오류":1, "응대 문제":1};
@@ -103,6 +103,14 @@ function editItem(it, fn) {
   var c = ST.items[it.id];
   if (!c) { c = { kind: kindOf(it), fault: faultOf(it), memo: "", by: "", at: today() }; ST.items[it.id] = c; }
   fn(c); save(); refreshAll();
+}
+function mine(owner) { return !WHO || owner === WHO; }
+function visItems() { return ITEMS.filter(function (it) { return mine(it.owner); }); }
+function paintTarget() {
+  var v = visItems(), pend = v.filter(function (it) { return kindOf(it) === "확인 전"; }).length;
+  var who = WHO ? WHO + " 님 · " + (OWNERS.filter(function (o) { return o.n === WHO; })[0] || { cats: "" }).cats : "전체 담당자";
+  $("target").textContent = "확정 대상: " + who + " · 문의 " + v.length + "건 (확인 전 " + pend + "건)";
+  $("target2").textContent = "귀책 대상: " + (WHO ? WHO + " 님의 기한 넘김, 그리고 " + WHO + " 님 귀책으로 확정된 문의" : "전체 담당자의 기한 넘김과 귀책으로 확정된 문의");
 }
 function compute() {
   var rows = OWNERS.map(function (o) {
@@ -256,8 +264,9 @@ function card(it, open) {
 }
 
 function renderItems() {
-  var cnt = {}; KINDS.forEach(function (k) { cnt[k] = 0; }); ITEMS.forEach(function (it) { cnt[kindOf(it)]++; });
-  $("it-sub").textContent = "확인 전 " + cnt["확인 전"] + "건 · 확정 " + (ITEMS.length - cnt["확인 전"]) + "건";
+  var cnt = {}; KINDS.forEach(function (k) { cnt[k] = 0; }); visItems().forEach(function (it) { cnt[kindOf(it)]++; });
+  paintTarget();
+  $("it-sub").textContent = "확인 전 " + cnt["확인 전"] + "건 · 확정 " + (visItems().length - cnt["확인 전"]) + "건";
   var kt = $("ktabs"); kt.textContent = "";
   KINDS.forEach(function (k) {
     var b = el("button", "", k + " " + cnt[k]); b.type = "button"; b.setAttribute("aria-pressed", String(TAB === k));
@@ -273,7 +282,7 @@ function renderItems() {
   if (isPend) { $("ct").textContent = "「확인 전」인 건: " + cnt["확인 전"] + "건"; renderPending(); renderOwnerPanel(); }
   else {
     var ul = $("kitems"); ul.textContent = "";
-    var list = ITEMS.filter(function (it) { return kindOf(it) === TAB; });
+    var list = visItems().filter(function (it) { return kindOf(it) === TAB; });
     if (!list.length) { ul.appendChild(el("li", "note", "해당하는 문의가 없어요.")); }
     list.forEach(function (it) { ul.appendChild(card(it, false)); });
   }
@@ -281,7 +290,7 @@ function renderItems() {
 /* 확인 전 요약표: 담당자마다 남은 건을 한 줄로 */
 function renderPending() {
   var body = $("pend"); body.textContent = "";
-  OWNERS.forEach(function (o) {
+  OWNERS.filter(function (o) { return mine(o.n); }).forEach(function (o) {
     var list = ITEMS.filter(function (it) { return it.owner === o.n && kindOf(it) === "확인 전"; });
     var tr = el("tr"); tr.appendChild(el("td", "nm", o.n)); tr.appendChild(el("td", "n", String(list.length)));
     var td = el("td");
@@ -331,7 +340,7 @@ function renderOwnerPanel() {
 /* 담당자별 현황 + 귀책 여부 확정 + 점수 */
 function buildAdj() {
   var b = $("adj"); b.textContent = "";
-  OWNERS.forEach(function (o) {
+  OWNERS.filter(function (o) { return mine(o.n); }).forEach(function (o) {
     var a = ST.adj[adjKey(o.n)] || (ST.adj[adjKey(o.n)] = { ex: 0, memo: "" });
     var tr = el("tr"); tr.appendChild(el("td", "nm", o.n));
     var td = el("td"), n = el("input", "in num"); n.type = "number"; n.min = "0"; n.max = String(o.over); n.value = a.ex; n.setAttribute("aria-label", o.n + " 기한 넘김 중 귀책 아님 건수");
@@ -370,8 +379,8 @@ function refreshScores(data) {
 }
 function refreshSev() {
   var b = $("sevrows"); b.textContent = "";
-  var list = ITEMS.filter(function (it) { return FAULT_KINDS[kindOf(it)]; });
-  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", "귀책이 확정된 건이 없어요."); td0.colSpan = 6; tr0.appendChild(td0); b.appendChild(tr0); return; }
+  var list = ITEMS.filter(function (it) { return FAULT_KINDS[kindOf(it)] && mine(faultOf(it) || it.owner); });
+  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", WHO ? WHO + " 님에게 귀책으로 확정된 건이 없어요." : "귀책이 확정된 건이 없어요."); td0.colSpan = 6; tr0.appendChild(td0); b.appendChild(tr0); return; }
   list.forEach(function (it) {
     var inc = incOf(it), tr = el("tr", inc ? "" : "off"); tr.appendChild(el("td", "nm", faultOf(it) || it.owner));
     tr.appendChild(el("td", "", it.text));
@@ -498,7 +507,7 @@ function buildYears(ys) {
 }
 function showYear(ys) {
   buildYears(ys); $("noyear").hidden = true; $("ybody").hidden = false; $("adjwrap").hidden = false;
-  $("adjyear").textContent = "문의 성격 · 귀책 확정 (" + YEAR + "년 기준, 운영 결산 탭에서 고른 해와 같아요). 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
+  $("adjyear").textContent = "문의 성격 · 귀책 확정은 위에서 고른 담당자(또는 전체 보기)의 것만 보여 줘요. " + YEAR + "년 자료 기준이에요. 여기서 적은 값은 운영 결산의 평가 점수(예시)에 바로 반영돼요.";
   loadYear(YEAR); PICK = ""; TAB = "";
   drawStatic(); buildTargets(); buildAdj(); buildRubric(); buildNext();
   var un = OWNERS.some(function (o) { return o.n === UNASSIGNED; });
@@ -506,11 +515,13 @@ function showYear(ys) {
   $("chief").value = ST.chief; $("sw1").value = ST.sevw["상"]; $("sw2").value = ST.sevw["중"]; $("sw3").value = ST.sevw["하"]; $("c1").value = ST.cut[0]; $("c2").value = ST.cut[1]; $("c3").value = ST.cut[2];
   $("rep").value = reportText(); refreshAll();
 }
-function render() {
-  DASH = window.Dash.data();
+function render(opt) {
+  DASH = window.Dash.data(); WHO = DASH.who || "";
   var ys = DASH.years.slice().sort(function (a, b) { return a - b; });
   if (!ys.length) { $("adjwrap").hidden = true; $("ybody").hidden = true; $("noyear").hidden = false; $("years").textContent = ""; return; }
+  if (opt && opt.follow && ys.indexOf(DASH.year) !== -1) { YEAR = DASH.year; } // 담당자별 탭에서 고른 연도를 따라간다
   if (ys.indexOf(YEAR) === -1) { YEAR = ys[ys.length - 1]; }
+  LASTMAP = DASH.cats.map(DASH.nameOf).join("|");
   showYear(ys);
 }
 $("chief").addEventListener("input", function () { ST.chief = this.value; save(); });
@@ -526,6 +537,15 @@ $("copy").addEventListener("click", function () {
   var b = this, fin = function (ok) { b.textContent = ok ? "복사됨" : "아래 글을 직접 복사해 주세요"; setTimeout(function () { b.textContent = "보고서 문구 복사"; }, 1800); };
   try { navigator.clipboard.writeText($("rep").value).then(function () { fin(true); }, function () { fin(false); }); } catch (e) { fin(false); }
 });
-window.Settle = { render: render };
+/* 담당자별 탭에서 사람(또는 전체 보기) · 연도 · 담당자 이름이 바뀌었을 때 */
+function sync(name, year) {
+  WHO = name || "";
+  if (!YD) { return; }
+  var fresh = window.Dash.data(), map = fresh.cats.map(fresh.nameOf).join("|");
+  if (map !== LASTMAP || (year && year !== YEAR)) { if (year) { YEAR = year; } render(); return; }
+  if (PICK && WHO && PICK !== WHO) { PICK = ""; }
+  buildAdj(); refreshSev(); renderItems();
+}
+window.Settle = { render: render, sync: sync };
 
 })();
