@@ -272,8 +272,8 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 
 /* 분류(왼쪽) · 채점(오른쪽)을 한 탭에 나란히 둔다. 좁은 화면에서는 위아래로 쌓는다 */
 #tab-grade { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
-#tab-grade .gh { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
-#tab-grade .gh small { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+#tab-grade .gh, #tab-classify .gh { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+#tab-grade .gh small, #tab-classify .gh small { font-weight: 400; font-size: 12.5px; color: var(--muted); }
 @media (min-width: 900px) {
   .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
   #tab-grade { margin-top: 0; padding-top: 0; border-top: 0; border-left: 1px solid var(--line); padding-left: 32px; }
@@ -418,3 +418,5 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
   .months button, .fchips button, .afbar button, .atabs button, .akind button, .akind2 button, .seg2 button, .ocard, .tile.tbtn { min-height: 36px; }
   .ev-link, .alink { padding: 6px 4px; }
 }
+
+.guide { margin: 0 0 12px; }

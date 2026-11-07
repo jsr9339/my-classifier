@@ -326,8 +326,8 @@
     });
     // 안내: 닫으면 기억한다
     var g = $("guide");
-    try { if (localStorage.getItem("guide-closed") === "1") { g.open = false; } } catch (e) { /* 저장이 막혀도 동작한다 */ }
-    g.addEventListener("toggle", function () { try { localStorage.setItem("guide-closed", g.open ? "0" : "1"); } catch (e) { /* 같음 */ } });
+    try { if (localStorage.getItem("guide-open") === "1") { g.open = true; } } catch (e) { /* 저장이 막혀도 동작한다 */ }
+    g.addEventListener("toggle", function () { try { localStorage.setItem("guide-open", g.open ? "1" : "0"); } catch (e) { /* 같음 */ } });
   })();
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-auto").addEventListener("click", function () { showTab("auto"); });

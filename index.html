@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="style.css?v=222067c1">
-<link rel="stylesheet" href="settle.css?v=222067c1">
+<link rel="stylesheet" href="style.css?v=1ddf7882">
+<link rel="stylesheet" href="settle.css?v=1ddf7882">
 </head>
 <body>
 <div class="page wide">
@@ -19,6 +19,15 @@
   </header>
 
   <main class="sheet">
+  <details class="guide" id="guide">
+    <summary>처음이세요? 이렇게 쓰세요</summary>
+    <ol>
+      <li><b>분류</b> 의견을 한 줄씩 넣거나 여러 줄(CSV)을 올려 칸 · 긴급도를 가려요. 자료가 없어도 예시 데이터로 모든 화면을 써 볼 수 있어요.</li>
+      <li><b>담당자별</b> 탭에서 «담당자 이름 정하기»로 칸마다 담당자를 적고, 문의 카드의 «고치기»로 문의 성격 · 평가 반영을 확정해요.</li>
+      <li><b>자동응답</b> 탭에서 단순 문의에 답변을 골라 «보내기»를 눌러요. 데모 화면이라 발송한 것처럼 처리 완료로만 바뀌고 실제 메일은 나가지 않아요.</li>
+      <li><b>운영 현황 · 운영 결산</b>에서 진행과 연말 점수(예시)를 보고, «전체 백업»으로 파일을 내려받아 두세요.</li>
+    </ol>
+  </details>
     <div class="tabs" role="tablist">
       <button type="button" id="btn-classify" role="tab" aria-selected="true">분류·채점</button>
       <button type="button" id="btn-auto" role="tab" aria-selected="false">자동응답</button>
@@ -29,18 +38,10 @@
     <p id="status" class="status" role="status"></p>
 
     <div class="split">
-      <details class="guide" id="guide" open>
-        <summary>처음이세요? 이렇게 쓰세요</summary>
-        <ol>
-          <li><b>분류</b> 의견을 한 줄씩 넣거나 여러 줄(CSV)을 올려 칸 · 긴급도를 가려요. 자료가 없어도 예시 데이터로 모든 화면을 써 볼 수 있어요.</li>
-          <li><b>담당자별</b> 탭에서 «담당자 이름 정하기»로 칸마다 담당자를 적고, 문의 카드의 «고치기»로 문의 성격 · 평가 반영을 확정해요.</li>
-          <li><b>자동응답</b> 탭에서 단순 문의에 답변을 골라 «보내기»를 눌러요. 데모 화면이라 발송한 것처럼 처리 완료로만 바뀌고 실제 메일은 나가지 않아요.</li>
-          <li><b>운영 현황 · 운영 결산</b>에서 진행과 연말 점수(예시)를 보고, «전체 백업»으로 파일을 내려받아 두세요.</li>
-        </ol>
-      </details>
     <section id="tab-classify">
+      <h2 class="gh">분류 <small>의견 한 줄을 보내면 AI가 칸과 긴급도를 알려드려요</small></h2>
+      <p class="hint">결과는 추정이에요.</p>
       <div id="chat" class="chat" aria-live="polite">
-        <div class="sys">의견 한 줄을 보내면 AI가 칸과 긴급도를 알려드려요.<br>결과는 추정이에요.</div>
       </div>
       <div id="try" class="try" aria-label="예시 문장"></div>
       <div class="composer">
@@ -352,11 +353,11 @@
 
   </main>
 </div>
-<script src="mask.js?v=222067c1"></script>
-<script src="rules.js?v=222067c1"></script>
-<script src="app.js?v=222067c1"></script>
-<script src="dashboard.js?v=222067c1"></script>
-<script src="auto.js?v=222067c1"></script>
-<script src="settle.js?v=222067c1"></script>
+<script src="mask.js?v=1ddf7882"></script>
+<script src="rules.js?v=1ddf7882"></script>
+<script src="app.js?v=1ddf7882"></script>
+<script src="dashboard.js?v=1ddf7882"></script>
+<script src="auto.js?v=1ddf7882"></script>
+<script src="settle.js?v=1ddf7882"></script>
 </body>
 </html>
