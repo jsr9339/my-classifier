@@ -15,8 +15,8 @@
     "있어요", "없어요", "해요", "했어요", "됩니다", "돼요", "같아요", "싶어요", "주세요", "않아요", "않았어요", "것이", "수가", "때가"];
   var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
-  var ROWS = [], SEL = { y: 0, m: 0, ms: [], filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
-    OSEL = { name: "전체 보기", filter: "전체", all: false, ms: [] }; // 처음에는 연 전체 · 전체 보기 // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
+  var ROWS = [], SEL = { y: 0, m: 0, ms: null, filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
+    OSEL = { name: "전체 보기", filter: "전체", all: false, ms: null }; // 처음에는 연 전체 · 전체 보기 // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
   try { NAMES = JSON.parse(localStorage.getItem("dash-names") || "{}"); } catch (e) { NAMES = {}; }
   try { OVERDUE = Number(localStorage.getItem("dash-overdue")) || 3; } catch (e) { OVERDUE = 3; }
   function saveNames() { try { localStorage.setItem("dash-names", JSON.stringify(NAMES)); } catch (e) { /* 저장이 막혀도 동작은 한다 */ } }
@@ -224,7 +224,7 @@
 
   function openDashboard(info, go) {
     var last = ROWS.reduce(function (a, r) { return Math.max(a, r.y * 100 + r.m); }, 0);
-    SEL.y = Math.floor(last / 100); SEL.ms = []; SEL.filter = "전체"; SEL.all = false; SEL.term = "";
+    SEL.y = Math.floor(last / 100); SEL.ms = null; SEL.filter = "전체"; SEL.all = false; SEL.term = "";
     $("d-info").textContent = info || ""; $("d-info").hidden = !info;
     $("d-mine").hidden = !DEMO_ON;
     $("d-fail").hidden = true;
@@ -295,16 +295,17 @@
     var a = toDate(r.date), b = toDate(r.stamps[3]);
     return a && b && r.step === 3 ? Math.max(0, Math.round((b - a) / DAY)) : null;
   }
-  // 달을 여러 개 체크해 모아 볼 수 있다. 아무것도 체크하지 않으면 연 전체(자료가 있는 모든 달). 담당자별 탭과 같은 방식이다.
+  // 달을 여러 개 체크해 모아 볼 수 있다. «연 전체»를 누르면 모든 달이 체크되고, 다시 누르면 모두 해제된다(담당자별 탭과 같은 방식).
   function dashMonths() { return Object.keys(monthSet(SEL.y)).map(Number).sort(function (x, y) { return x - y; }); }
   function normSel() {
     var have = dashMonths();
-    SEL.ms = (SEL.ms || []).filter(function (x) { return have.indexOf(x) !== -1; });
-    if (!SEL.ms.length) { SEL.ms = have.slice(); }
+    if (SEL.ms === null) { SEL.ms = have.slice(); } // 처음에는 연 전체
+    SEL.ms = SEL.ms.filter(function (x) { return have.indexOf(x) !== -1; });
     SEL.m = SEL.ms.length === 1 ? SEL.ms[0] : 0; // 한 달만 체크했을 때만 «이 달» 로 본다 (전월 비교 등)
   }
   function selLabel(ms) {
     ms = ms.slice().sort(function (x, y) { return x - y; });
+    if (!ms.length) { return SEL.y + "년 · 고른 달 없음"; }
     if (ms.length === dashMonths().length) { return SEL.y + "년 전체"; }
     if (ms.length === 1) { return SEL.y + "년 " + ms[0] + "월"; }
     var run = ms[ms.length - 1] - ms[0] === ms.length - 1;
@@ -347,7 +348,7 @@
   }
 
   function toggleMonth(m, on) {
-    if (m === 0) { SEL.ms = dashMonths(); }
+    if (m === 0) { SEL.ms = on ? [] : dashMonths(); } // 연 전체가 이미 체크돼 있으면 전체 해제
     else if (on) { SEL.ms = SEL.ms.filter(function (x) { return x !== m; }); }
     else { SEL.ms = SEL.ms.concat([m]); }
     SEL.filter = "전체"; SEL.all = false; SEL.term = ""; render();
@@ -357,7 +358,7 @@
     years().forEach(function (y) { var o = el("option", "", y + "년"); o.value = y; ys.appendChild(o); });
     ys.value = String(SEL.y);
     ys.onchange = function () {
-      SEL.y = Number(ys.value);
+      SEL.y = Number(ys.value); SEL.ms = null; OSEL.ms = null; // 해를 바꾸면 연 전체로
       SEL.filter = "전체"; SEL.all = false; SEL.term = ""; render();
     };
     normSel();
@@ -833,13 +834,13 @@
   // 체크한 달을 자료가 있는 달로 맞춘다. 하나도 없으면 «연 전체»(자료가 있는 모든 달)로 본다.
   function normMs() {
     var have = haveMonths();
-    if (!OSEL.ms) { OSEL.ms = []; }
+    if (OSEL.ms === null) { OSEL.ms = have.slice(); } // 처음에는 연 전체
     OSEL.ms = OSEL.ms.filter(function (x) { return have.indexOf(x) !== -1; });
-    if (!OSEL.ms.length) { OSEL.ms = have.slice(); }
   }
   function inOwnerPeriod(r) { return r.y === SEL.y && OSEL.ms.indexOf(r.m) !== -1; }
   function ownerPeriodLabel() {
     var ms = OSEL.ms.slice().sort(function (x, y) { return x - y; });
+    if (!ms.length) { return SEL.y + "년 · 고른 달 없음"; }
     if (ms.length === haveMonths().length) { return SEL.y + "년 전체"; }
     if (ms.length === 1) { return SEL.y + "년 " + ms[0] + "월"; }
     var run = ms[ms.length - 1] - ms[0] === ms.length - 1;
@@ -884,7 +885,7 @@
     years().forEach(function (y) { var o = el("option", "", y + "년"); o.value = y; ys.appendChild(o); });
     ys.value = String(SEL.y);
     ys.onchange = function () {
-      SEL.y = Number(ys.value);
+      SEL.y = Number(ys.value); SEL.ms = null; OSEL.ms = null; // 해를 바꾸면 연 전체로
       SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render();
     };
     var have = monthSet(SEL.y), box = $("o-months"); box.textContent = "";
@@ -895,7 +896,7 @@
         var on = m === 0 ? OSEL.ms.length === nAll : OSEL.ms.indexOf(m) !== -1;
         b.setAttribute("aria-pressed", String(on)); b.disabled = m !== 0 && !have[m];
         b.addEventListener("click", function () {
-          if (m === 0) { OSEL.ms = haveMonths(); }
+          if (m === 0) { OSEL.ms = on ? [] : haveMonths(); } // 연 전체가 이미 체크돼 있으면 전체 해제
           else if (on) { OSEL.ms = OSEL.ms.filter(function (x) { return x !== m; }); }
           else { OSEL.ms = OSEL.ms.concat([m]); }
           OSEL.all = false; renderOwner();
