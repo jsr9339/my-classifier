@@ -110,7 +110,7 @@ function editItem(it, fn) {
   fn(c); save(); changed();
 }
 /* 값이 바뀌면 이 탭을 다시 그리고, 담당자별 탭의 문의 카드도 같이 갱신한다 */
-function changed() { refreshAll(); if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); } }
+function changed() { refreshAll(); if (window.Dash && window.Dash.refresh) { window.Dash.refresh(); } }
 function compute() {
   var rows = OWNERS.map(function (o) {
     return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, ex: 0, exMemos: [], sev: { "상": 0, "중": 0, "하": 0 } };
@@ -386,7 +386,7 @@ function showYear(ys) {
   loadYear(YEAR);
   try { showYearBody(); } finally {
     // 화면 그리다 문제가 생겨도 담당자별 문의 카드에는 확정 값이 보이게 한다
-    if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); }
+    if (window.Dash && window.Dash.refresh) { window.Dash.refresh(); }
   }
 }
 function showYearBody() {
@@ -455,7 +455,7 @@ function evalFor(r) {
     var l0 = el("label", "", "처리 완성도"); l0.appendChild(dn0); f.appendChild(l0);
     var nt = el("div", "memo"); nt.appendChild(el("p", "note", (kind === "확인 전" ? "문의 성격이 아직 정해지지 않았어요. " : "이 성격은 귀책이 없어서 점수에는 영향이 없어요. ") + "귀책이 있다면 문의 성격을 업무 오류 · 응대 문제로 바꾸면 중대성 · 반영 여부를 정할 수 있어요."));
     var go = el("button", "btn sm", "문의 성격 고치기"); go.type = "button";
-    go.addEventListener("click", function () { r.kindOpen = true; if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); } });
+    go.addEventListener("click", function () { r.kindOpen = true; if (window.Dash && window.Dash.refresh) { window.Dash.refresh(); } });
     nt.appendChild(go); f.appendChild(nt);
   }
   var mi = el("input", "in"); mi.type = "text"; mi.maxLength = 200; mi.value = (ST.items[it.id] || {}).memo || ""; mi.placeholder = "예: 평가 시스템 오류라서 귀책 아님";

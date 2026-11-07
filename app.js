@@ -29,7 +29,7 @@
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
     if ((name === "dash" || name === "owner") && window.Dash) { window.Dash.ensure(); } // 자료가 없으면 예시 데이터로 바로 보여 준다
-    if ((name === "settle" || name === "owner") && window.Dash) { window.Dash.ensure().then(function () { if (window.Settle) { window.Settle.render({ follow: name === "owner" }); } }); }
+    if ((name === "settle" || name === "owner" || name === "dash") && window.Dash) { window.Dash.ensure().then(function () { if (window.Settle) { window.Settle.render({ follow: name === "owner" }); } }); } // 문의 성격 보기를 위해 운영 현황도 준비한다
   }
 
   function classifyRaw(raw) {

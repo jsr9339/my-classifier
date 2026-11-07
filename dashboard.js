@@ -15,7 +15,7 @@
     "있어요", "없어요", "해요", "했어요", "됩니다", "돼요", "같아요", "싶어요", "주세요", "않아요", "않았어요", "것이", "수가", "때가"];
   var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
-  var ROWS = [], SEL = { y: 0, m: 0, ms: null, filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
+  var ROWS = [], SEL = { y: 0, m: 0, ms: null, fs: "전체", fu: "전체", fk: "전체", filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
     OSEL = { name: "전체 보기", filter: "전체", all: false, ms: null }; // 처음에는 연 전체 · 전체 보기 // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
   try { NAMES = JSON.parse(localStorage.getItem("dash-names") || "{}"); } catch (e) { NAMES = {}; }
   try { OVERDUE = Number(localStorage.getItem("dash-overdue")) || 3; } catch (e) { OVERDUE = 3; }
@@ -224,7 +224,7 @@
 
   function openDashboard(info, go) {
     var last = ROWS.reduce(function (a, r) { return Math.max(a, r.y * 100 + r.m); }, 0);
-    SEL.y = Math.floor(last / 100); SEL.ms = null; SEL.filter = "전체"; SEL.all = false; SEL.term = "";
+    SEL.y = Math.floor(last / 100); SEL.ms = null; resetF(); SEL.all = false; SEL.term = "";
     $("d-info").textContent = info || ""; $("d-info").hidden = !info;
     $("d-mine").hidden = !DEMO_ON;
     $("d-fail").hidden = true;
@@ -351,7 +351,7 @@
     if (m === 0) { SEL.ms = on ? [] : dashMonths(); } // 연 전체가 이미 체크돼 있으면 전체 해제
     else if (on) { SEL.ms = SEL.ms.filter(function (x) { return x !== m; }); }
     else { SEL.ms = SEL.ms.concat([m]); }
-    SEL.filter = "전체"; SEL.all = false; SEL.term = ""; render();
+    resetF(); SEL.all = false; SEL.term = ""; render();
   }
   function renderPeriod() {
     var ys = $("d-year"); ys.textContent = "";
@@ -359,7 +359,7 @@
     ys.value = String(SEL.y);
     ys.onchange = function () {
       SEL.y = Number(ys.value); SEL.ms = null; OSEL.ms = null; // 해를 바꾸면 연 전체로
-      SEL.filter = "전체"; SEL.all = false; SEL.term = ""; render();
+      resetF(); SEL.all = false; SEL.term = ""; render();
     };
     normSel();
     var have = monthSet(SEL.y), box = $("d-months"); box.textContent = ""; var nAllD = dashMonths().length;
@@ -430,49 +430,32 @@
     mt.appendChild(el("p", "m-line", v.avgDays === null ? "처리 완료까지 걸린 시간: 접수일과 완료일이 있는 문장이 없어요" : "처리 완료까지 평균 " + (Math.round(v.avgDays * 10) / 10) + "일 (" + v.nDays + "건 기준)"));
   }
 
-  function matches(r) {
-    if (SEL.term && r.text.indexOf(SEL.term) === -1) { return false; }
-    var f = SEL.filter;
-    if (f === "전체") { return true; }
-    if (f === "긴급 높음") { return r.urg === "높음"; }
-    if (f === "사람 확인") { return r.chk; }
-    if (f === "민감") { return r.sens; }
-    if (f === "기한 넘김") { return isOverdue(r); }
-    return STEPS[r.step] === f;
+  var KIND_LIST = ["확인 전", "단순 문의", "업무 오류", "응대 문제", "제도·시스템·외부", "현업 팀장·팀원"];
+  function resetF() { SEL.filter = "전체"; SEL.fs = "전체"; SEL.fu = "전체"; SEL.fk = "전체"; } // 처리 단계 · 긴급도 · 문의 성격
+  function kindFor(r) { var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null; return inf ? inf.kind : "확인 전"; }
+  function matches(r, skip) {
+    if (skip !== "fs" && SEL.fs !== "전체" && STEPS[r.step] !== SEL.fs) { return false; }
+    if (skip !== "fu" && SEL.fu !== "전체" && r.urg !== SEL.fu) { return false; }
+    if (skip !== "fk" && SEL.fk !== "전체" && kindFor(r) !== SEL.fk) { return false; }
+    return true;
   }
-  function renderTerms(v) {
-    var box = $("d-terms"); box.textContent = "";
-    if (!v.terms.length) { box.hidden = true; return; }
-    box.hidden = false;
-    box.appendChild(el("span", "flab", "자주 나온 말"));
-    var chips = el("div", "fchips");
-    v.terms.forEach(function (o) {
-      var b = el("button", "", o.t + " " + o.n); b.type = "button";
-      b.setAttribute("aria-pressed", String(SEL.term === o.t));
-      b.addEventListener("click", function () { SEL.term = SEL.term === o.t ? "" : o.t; SEL.all = false; render(); });
-      chips.appendChild(b);
-    });
-    box.appendChild(chips);
-    // 한 줄에 들어가지 않는 낱말은 뺀다 (칸 밖으로 나가지 않게)
-    while (chips.children.length > 1 && chips.lastChild.offsetTop > chips.firstChild.offsetTop + 2) { chips.removeChild(chips.lastChild); }
-  }
+  // 보기: 처리 단계 · 긴급도 · 문의 성격을 따로 골라 함께 걸러 본다 (숫자는 다른 두 가지를 고른 상태에서의 건수)
   function renderFilters(v) {
     var box = $("d-filters"); box.textContent = "";
-    var it = v.items.filter(function (r) { return !SEL.term || r.text.indexOf(SEL.term) !== -1; }), cnt = {
-      "전체": it.length,
-      "긴급 높음": it.filter(function (r) { return r.urg === "높음"; }).length,
-      "사람 확인": it.filter(function (r) { return r.chk; }).length,
-      "민감": it.filter(function (r) { return r.sens; }).length,
-      "기한 넘김": it.filter(isOverdue).length
-    };
-    STEPS.forEach(function (n, k) { cnt[n] = it.filter(function (r) { return r.step === k; }).length; });
-    [["보기", ["전체", "긴급 높음", "사람 확인", "민감", "기한 넘김"]], ["처리 단계", STEPS]].forEach(function (g) {
-      var row = el("div", "frow"), chips = el("div", "fchips" + (g[0] === "처리 단계" ? " one" : ""));
+    var groups = [
+      ["처리 단계", "fs", ["전체"].concat(STEPS), function (r, k) { return STEPS[r.step] === k; }],
+      ["긴급도", "fu", ["전체"].concat(URGS), function (r, k) { return r.urg === k; }],
+      ["문의 성격", "fk", ["전체"].concat(KIND_LIST), function (r, k) { return kindFor(r) === k; }]
+    ];
+    groups.forEach(function (g) {
+      var base = v.items.filter(function (r) { return matches(r, g[1]); });
+      var row = el("div", "frow"), chips = el("div", "fchips" + (g[1] === "fs" ? " one" : ""));
       row.appendChild(el("span", "flab", g[0]));
-      g[1].forEach(function (k) {
-        var b = el("button", "", k + " " + cnt[k]); b.type = "button";
-        b.setAttribute("aria-pressed", String(SEL.filter === k));
-        b.addEventListener("click", function () { SEL.filter = k; SEL.all = false; render(); });
+      g[2].forEach(function (k) {
+        var n = k === "전체" ? base.length : base.filter(function (r) { return g[3](r, k); }).length;
+        var b = el("button", "", k + " " + n); b.type = "button";
+        b.setAttribute("aria-pressed", String(SEL[g[1]] === k));
+        b.addEventListener("click", function () { SEL[g[1]] = k; SEL.all = false; render(); });
         chips.appendChild(b);
       });
       row.appendChild(chips); box.appendChild(row);
@@ -655,36 +638,30 @@
       track.appendChild(seg); row.appendChild(track); row.appendChild(el("span", "tot", String(r.t))); box.appendChild(row);
     });
   }
+  // 사람 기준: 누가 얼마나 진행했는지 (이름은 담당자별 탭에서 정한다)
   function renderAssign(v) {
     var box = $("d-assign"); box.textContent = "";
-    v.cats.forEach(function (c) {
-      var total = c[1] + c[2] + c[3], b4 = v.by[c[0]], asg = b4[1], doing = b4[2], done = b4[3];
-      var row = el("div", "arow");
-      row.appendChild(el("span", "nm", c[0]));
-      var who = el("span", "who"), inp = el("input", "who-in");
-      inp.type = "text"; inp.placeholder = "담당자 이름"; inp.maxLength = 20; inp.value = nameOf(c[0]);
-      inp.setAttribute("aria-label", c[0] + " 담당자 이름");
-      inp.addEventListener("input", function () { NAMES[c[0]] = inp.value.trim(); saveNames(); renderOwner(); });
-      who.appendChild(inp); who.appendChild(document.createTextNode(" " + total + "건" + (c[1] ? " (높음 " + c[1] + ")" : "")));
+    var groups = ownerGroups(v.rows).sort(function (a, b) { return b.total - a.total || (a.name < b.name ? -1 : 1); });
+    if (!groups.length) { box.appendChild(el("p", "fine", "이 기간에는 의견이 없어요.")); return; }
+    groups.forEach(function (g) {
+      var c = [0, 0, 0, 0]; g.rows.forEach(function (r) { c[r.step]++; });
+      var hi = g.rows.filter(function (r) { return r.urg === "높음"; }).length, pct = g.total ? Math.round(c[3] / g.total * 100) : 0;
+      var row = el("div", "arow parow");
+      row.appendChild(el("span", "nm", g.name));
+      var who = el("span", "who");
+      who.appendChild(document.createTextNode(g.total + "건" + (hi ? " (높음 " + hi + ")" : "") + " · " + g.catList.join(" · ")));
       row.appendChild(who);
-      var b = el("button", "", "복사"); b.type = "button";
-      b.disabled = !total;
-      b.addEventListener("click", function () {
-        var name = nameOf(c[0]);
-        var text = (name ? name + " 님, " : "담당자님, ") + v.label + " 설문에서 [" + c[0] + "] 의견 " + total + "건이 접수됐어요. 처리 완료 " + done + "건, 처리 중 " + doing + "건, 담당자 배정 " + asg + "건이에요." + (c[1] ? " 긴급 높음 " + c[1] + "건을 먼저 확인해 주세요." : "");
-        var fin = function (ok) { b.textContent = ok ? "복사됨" : "복사 안 됨"; setTimeout(function () { b.textContent = "복사"; }, 1400); };
-        try { navigator.clipboard.writeText(text).then(function () { fin(true); }, function () { fin(false); }); } catch (e) { fin(false); }
-      });
-      row.appendChild(b);
       var prg = el("div", "prg"), bar = el("div", "b");
-      [["d", done], ["p", doing], ["a", asg]].forEach(function (p) { var i = el("i", p[0]); i.style.width = (total ? p[1] / total * 100 : 0) + "%"; bar.appendChild(i); });
-      prg.appendChild(el("span", "", "진행")); prg.appendChild(bar); prg.appendChild(el("span", "", "완료 " + done + " / " + total));
-      row.appendChild(prg); box.appendChild(row);
+      [["d", c[3]], ["p", c[2]], ["a", c[1]]].forEach(function (p) { var i = el("i", p[0]); i.style.width = (g.total ? p[1] / g.total * 100 : 0) + "%"; bar.appendChild(i); });
+      prg.appendChild(el("span", "", "진행")); prg.appendChild(bar); prg.appendChild(el("span", "", "완료 " + c[3] + " / " + g.total + " (" + pct + "%)"));
+      row.appendChild(prg);
+      row.appendChild(el("span", "sub3", "처리 완료 " + c[3] + " · 처리 중 " + c[2] + " · 담당자 배정 " + c[1] + " · 접수 " + c[0]));
+      box.appendChild(row);
     });
   }
   function render() {
     var v = viewOf();
-    renderPeriod(); renderTiles(v); renderTerms(v); renderFilters(v); renderItems(v); renderBars(v); renderAssign(v); renderOwner();
+    renderPeriod(); renderTiles(v); renderFilters(v); renderItems(v); renderBars(v); renderAssign(v); renderOwner();
     $("d-down2").disabled = !ROWS.some(function (r) { return r.edited; });
   }
 
@@ -782,7 +759,8 @@
   // 운영 결산 탭이 같은 자료를 읽어 가도록 내어 준다 (읽기만 한다)
   window.Dash = {
     ensure: ensureData,
-    refreshOwner: function () { renderOwner(true); }, // 운영 결산 탭에서 값이 바뀌면 문의 카드를 다시 그린다
+    refreshOwner: function () { renderOwner(true); },
+    refresh: function () { render(); }, // 운영 결산이 확정 값을 바꾸거나 처음 준비되면 운영 현황 · 담당자별 화면을 다시 그린다
     data: function () {
       return { rows: ROWS, cats: cats(), nameOf: nameOf, ownerOf: ownerOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };
     }
@@ -886,7 +864,7 @@
     ys.value = String(SEL.y);
     ys.onchange = function () {
       SEL.y = Number(ys.value); SEL.ms = null; OSEL.ms = null; // 해를 바꾸면 연 전체로
-      SEL.filter = "전체"; SEL.all = false; SEL.term = ""; OSEL.all = false; render();
+      resetF(); SEL.all = false; SEL.term = ""; OSEL.all = false; render();
     };
     var have = monthSet(SEL.y), box = $("o-months"); box.textContent = "";
     var nAll = haveMonths().length;
