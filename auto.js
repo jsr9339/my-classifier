@@ -100,14 +100,15 @@
     t.appendChild(el("span", "chip", r.cat));
     if (r.auto) { t.appendChild(el("span", "chip src", "자동응답 · " + r.auto)); if (r.stamps[3]) { t.appendChild(el("span", "chip", "처리 " + r.stamps[3].slice(5))); } }
     else if (r.astat === "kc") { var inf0 = window.Settle.info(r); t.appendChild(el("span", "chip src", "문의 성격 변경 · " + (inf0 ? inf0.kind : ""))); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
+    else if (r.astat === "done") { t.appendChild(el("span", "chip src", "직접 처리 완료")); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
     else { t.appendChild(el("span", "chip need", "답변 필요")); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
     li.appendChild(t); li.appendChild(el("p", "", r.text));
     if (r.auto) {
       li.appendChild(el("p", "why", r.note || ""));
-      li.appendChild(el("p", "fine", "✔ 발송 완료" + (r.stamps[3] ? " · " + r.stamps[3] : "") + " (데모: 실제로는 나가지 않아요)"));
+      li.appendChild(el("p", "fine", "✔ 발송 완료" + (r.stamps[3] ? " · " + r.stamps[3] : "") + " (데모 화면이라 실제로는 나가지 않아요)"));
     }
     var tabs = el("div", "atabs"); tabs.setAttribute("role", "tablist");
-    (r.astat === "kc" ? [["kind", "문의 성격 바꾸기"]] : [["send", "자동응답 보내기"], ["write", "자동응답 쓰기"], ["kind", "문의 성격 바꾸기"]]).forEach(function (p) {
+    (r.astat === "kc" || r.astat === "done" ? [["kind", "문의 성격 바꾸기"]] : [["send", "자동응답 보내기"], ["write", "자동응답 쓰기"], ["kind", "문의 성격 바꾸기"]]).forEach(function (p) {
       var b = el("button", "", p[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-pressed", String(r.atab === p[0]));
       b.addEventListener("click", function () { r.atab = r.atab === p[0] ? "" : p[0]; render(); });
       tabs.appendChild(b);
@@ -163,7 +164,7 @@
   // 상태 필터 (전체 / 답변 필요 / 자동응답 / 문의 성격 변경 중 하나)
   function statusBar(box, n, total) {
     box.textContent = "";
-    [["all", "전체 " + total + "건"], ["need", "답변 필요 " + n.need + "건"], ["auto", "자동응답 " + n.auto + "건"], ["kc", "문의 성격 변경 " + n.kc + "건"]].forEach(function (p) {
+    [["all", "전체 " + total + "건"], ["need", "답변 필요 " + n.need + "건"], ["auto", "자동응답 " + n.auto + "건"], ["kc", "문의 성격 변경 " + n.kc + "건"]].concat(n.done ? [["done", "직접 처리 " + n.done + "건"]] : []).forEach(function (p) {
       var b = el("button", "", p[1]); b.type = "button"; b.setAttribute("aria-pressed", String(FLT.status === p[0]));
       b.addEventListener("click", function () { FLT.status = p[0]; render(); }); box.appendChild(b);
     });
@@ -247,15 +248,16 @@
       if (r.auto) { r.astat = "auto"; all.push(r); }
       else if (r.kc && inf && inf.kind !== "단순 문의") { r.astat = "kc"; all.push(r); }
       else if (inf && inf.kind === "단순 문의" && (r.step < 3 || !match(r.text, r.cat))) { r.astat = "need"; all.push(r); }
+      else if (inf && inf.kind === "단순 문의") { r.astat = "done"; all.push(r); } // 다른 화면에서 직접 처리 완료로 바꾼 단순 문의도 목록에서 빠지지 않게 보여 준다
     });
-    var ORDER = { need: 0, auto: 1, kc: 2 };
+    var ORDER = { need: 0, auto: 1, kc: 2, done: 3 };
     all.sort(function (x, y) {
       if (x.astat !== y.astat) { return ORDER[x.astat] - ORDER[y.astat]; }
       if (x.astat === "need") { return (x.step === 3) - (y.step === 3); }
       return (y.stamps[3] || "") < (x.stamps[3] || "") ? -1 : 1;
     });
-    var n = { need: 0, auto: 0, kc: 0 }; all.forEach(function (r) { n[r.astat]++; });
-    $("a-count").textContent = "답변 필요 " + n.need + "건 / 자동응답 " + n.auto + "건 / 문의 성격 변경 " + n.kc + "건";
+    var n = { need: 0, auto: 0, kc: 0, done: 0 }; all.forEach(function (r) { n[r.astat]++; });
+    $("a-count").textContent = "답변 필요 " + n.need + "건 / 자동응답 " + n.auto + "건 / 문의 성격 변경 " + n.kc + "건" + (n.done ? " / 직접 처리 " + n.done + "건" : "");
     statusBar($("a-stat-f"), n, all.length);
     var byStat = all.filter(function (r) { return FLT.status === "all" || FLT.status === r.astat; });
     filterBar($("a-done-f"), "list", byStat);

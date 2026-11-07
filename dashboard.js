@@ -387,7 +387,7 @@
   function renderTiles(v) {
     $("d-sum-sub").textContent = v.label + " · 단계를 눌러 바꿔 볼 수 있어요";
     var box = $("d-tiles"); box.textContent = "";
-    [["전체 의견", v.tot, "", ""], ["긴급 높음", v.hi, "hot", ""], ["사람 확인", v.chk, "", ""], ["처리 완료" + (v.rows.some(function (r) { return r.auto; }) ? "(자동응답 " + v.rows.filter(function (r) { return r.auto; }).length + " 포함)" : ""), v.st[3], "", " / " + v.tot]].forEach(function (r) {
+    [["전체 의견", v.tot, "", ""], ["긴급 높음", v.hi, "hot", ""], ["사람 확인", v.chk, "", ""], ["처리 완료" + (v.rows.some(function (r) { return r.auto; }) ? "\n(자동응답 " + v.rows.filter(function (r) { return r.auto; }).length + " 포함)" : ""), v.st[3], "", " / " + v.tot]].forEach(function (r) {
       var t = el("div", "tile " + r[2]), b = el("b", "", String(r[1]));
       if (r[3]) { b.appendChild(el("small", "", r[3])); }
       t.appendChild(b); t.appendChild(el("span", "", r[0])); box.appendChild(t);
@@ -816,7 +816,9 @@
     try { var sv = JSON.parse(localStorage.getItem("settle-v1") || "null"); if (sv && typeof sv === "object") { sv.items = {}; localStorage.setItem("settle-v1", JSON.stringify(sv)); } } catch (e) { /* 저장이 막혀도 동작한다 */ }
     if (window.Settle && window.Settle.reload) { window.Settle.reload(); }
     var bm = $("d-bk-msg"); if (bm) { bm.textContent = "예시 데이터로 되돌리는 중이에요..."; }
-    loadDemo().then(function () { if (bm) { bm.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건이고, 보낸 자동응답 · 처리 단계 · 문의마다 고친 확정 값이 처음 상태예요(목표값 · 배점 · 답변 목록은 그대로예요)."; } });
+    loadDemo().then(function () {
+      var top = $("status"); if (top) { top.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건."; setTimeout(function () { if (top.textContent.indexOf("예시 데이터로 되돌렸어요") === 0) { top.textContent = ""; } }, 6000); }
+      if (bm) { bm.textContent = "예시 데이터로 되돌렸어요. 문장 " + ROWS.length + "건이고, 보낸 자동응답 · 처리 단계 · 문의마다 고친 확정 값이 처음 상태예요(목표값 · 배점 · 답변 목록은 그대로예요)."; } });
   }
   function readFile(file) {
     return file.arrayBuffer().then(function (buf) {
@@ -900,7 +902,15 @@
   });
   $("d-down").addEventListener("click", download);
   $("d-down2").addEventListener("click", downloadEdited);
-  $("d-reset").addEventListener("click", reset);
+  // 되돌리기는 보낸 자동응답 · 고친 확정 값을 지우므로, 한 번 더 눌러야 실행한다 (4초 안에)
+  var RESET_ARMED = null;
+  $("d-reset").addEventListener("click", function () {
+    var b = this, bm = $("d-bk-msg");
+    if (RESET_ARMED) { clearTimeout(RESET_ARMED); RESET_ARMED = null; b.textContent = "예시 데이터로 되돌리기"; reset(); return; }
+    b.textContent = "정말 되돌릴까요? 한 번 더 누르세요";
+    if (bm) { bm.textContent = "보낸 자동응답 · 처리 단계 · 문의마다 고친 확정 값이 지워져요. 필요하면 먼저 «전체 백업 내려받기»를 해 두세요."; }
+    RESET_ARMED = setTimeout(function () { RESET_ARMED = null; b.textContent = "예시 데이터로 되돌리기"; }, 4000);
+  });
   $("d-bk-down").addEventListener("click", backupDownload);
   $("d-bk-up").addEventListener("click", function () { $("d-bk-file").click(); });
   $("d-bk-file").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) { backupRead(f); } });

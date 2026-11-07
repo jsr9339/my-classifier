@@ -41,7 +41,7 @@
 .settle-scope .tile { background: var(--card); border-radius: 14px; padding: 10px 12px; }
 .settle-scope .tile b { display: block; font-size: 26px; font-weight: 900; line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .settle-scope .tile b small { font-size: 13px; font-weight: 700; color: var(--muted); }
-.settle-scope .tile span { font-size: 12.5px; color: var(--muted); }
+.settle-scope .tile span { font-size: 12.5px; color: var(--muted); white-space: pre-line; }
 .settle-scope .tile.hot b { color: var(--hot); }
 .settle-scope .line2 { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
 .settle-scope .tscroll { overflow-x: auto; }
