@@ -8,3 +8,6 @@ node_modules/
 # 정답과 점수 기록은 GitHub · Vercel에 올리지 않는다
 data/
 log/
+
+# 프로젝트와 무관한 이미지
+시안.png
