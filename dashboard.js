@@ -680,12 +680,15 @@
       row.appendChild(el("span", "nm", g.name));
       var who = el("span", "who");
       who.appendChild(document.createTextNode(g.total + "건" + (hi ? " (높음 " + hi + ")" : "") + " · " + g.catList.join(" · ")));
+      var na0 = g.rows.filter(function (r) { return r.auto; }).length;
+      if (na0) { who.appendChild(el("span", "chip auto", "자동응답 " + na0)); } // 자동응답으로 처리한 건수
       row.appendChild(who);
       var prg = el("div", "prg"), bar = el("div", "b");
       [["d", c[3]], ["p", c[2]], ["a", c[1]]].forEach(function (p) { var i = el("i", p[0]); i.style.width = (g.total ? p[1] / g.total * 100 : 0) + "%"; bar.appendChild(i); });
       prg.appendChild(el("span", "", "진행")); prg.appendChild(bar); prg.appendChild(el("span", "", "완료 " + c[3] + " / " + g.total + " (" + pct + "%)"));
       row.appendChild(prg);
-      row.appendChild(el("span", "sub3", "처리 완료 " + c[3] + " · 처리 중 " + c[2] + " · 담당자 배정 " + c[1] + " · 접수 " + c[0]));
+      var na = g.rows.filter(function (r) { return r.auto; }).length;
+      row.appendChild(el("span", "sub3", "처리 완료 " + c[3] + " · 처리 중 " + c[2] + " · 담당자 배정 " + c[1] + " · 접수 " + c[0] + " · 자동응답 " + na));
       box.appendChild(row);
     });
   }
