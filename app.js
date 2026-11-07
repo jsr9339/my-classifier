@@ -177,27 +177,34 @@
   function runAIGrade() {
     getJSON(ANSWER_PATH).then(function (answers) {
       var n = answers.length;
-      if (!window.confirm("AI로 채점하면 AI를 " + n + "번 부릅니다.\n하루 사용 한도 중 " + n + "회가 쓰여요. 계속할까요?")) { return; }
+      if (!window.confirm("AI로 채점하면 AI를 " + n + "번 부릅니다 (약 " + Math.ceil(n * 5.2 / 60) + "분 걸려요).\n하루 사용 한도 중 " + n + "회가 쓰여요. 계속할까요?")) { return; }
       var btn = $("btn-ai"), prog = $("ai-progress");
       btn.disabled = true; $("btn-score").disabled = true;
       prog.hidden = false; prog.textContent = "AI 채점 중... 0 / " + n;
       setStatus("");
 
-      var results = new Array(n), idx = 0, done = 0, abort = "";
-      function worker() {
-        if (abort || idx >= n) { return Promise.resolve(); }
-        var i = idx++;
+      // 무료 구간은 분당 15회까지라서 5.2초에 한 번씩 천천히 부른다.
+      var GAP = 5200;
+      var results = new Array(n), done = 0, abort = "";
+      function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      function one(i, tries) {
         return callAI(answers[i].text).then(function (res) {
           results[i] = res;
         }).catch(function (e) {
-          if (e.kind === "한도" || e.kind === "한도장치미설정" || e.kind === "한도장치오류") { abort = e.message; }
+          if (e.kind === "분당" && tries < 4) { return sleep(8000).then(function () { return one(i, tries + 1); }); }
+          if (e.kind === "한도" || e.kind === "분당" || e.kind === "한도장치미설정" || e.kind === "한도장치오류") { abort = e.message; }
           else { results[i] = null; }
-        }).then(function () {
-          done++; prog.textContent = "AI 채점 중... " + done + " / " + n;
-          return worker();
         });
       }
-      return Promise.all([worker(), worker(), worker()]).then(function () {
+      function loop(i) {
+        if (abort || i >= n) { return Promise.resolve(); }
+        var started = Date.now();
+        return one(i, 0).then(function () {
+          done++; prog.textContent = "AI 채점 중... " + done + " / " + n;
+          return sleep(Math.max(GAP - (Date.now() - started), 0));
+        }).then(function () { return loop(i + 1); });
+      }
+      return loop(0).then(function () {
         btn.disabled = false; $("btn-score").disabled = false;
         if (abort) {
           prog.textContent = "중간에 멈췄어요: " + abort + " (채점이 끝나지 않아 결과는 보여 주지 않아요)";

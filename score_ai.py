@@ -67,7 +67,7 @@ def main():
                     "AI": [res["칸"], res["긴급도"]],
                     "이유": res["이유"], "확신": res["확신"],
                 })
-            time.sleep(0.3)
+            time.sleep(5.2)  # 무료 구간 분당 15회를 넘지 않게
         report["실행"].append({
             "회차": "AI %d" % r, "모델별호출수": models,
             "칸": ok_c, "긴급도": ok_u, "둘다": ok_b,
