@@ -102,8 +102,10 @@ function incOf(it) { var c = ST.items[it.id]; return !(c && c.exc); }
 function editItem(it, fn) {
   var c = ST.items[it.id];
   if (!c) { c = { kind: kindOf(it), fault: faultOf(it), memo: "", by: "", at: today() }; ST.items[it.id] = c; }
-  fn(c); save(); refreshAll();
+  fn(c); save(); changed();
 }
+/* 값이 바뀌면 이 탭을 다시 그리고, 담당자별 탭의 문의 카드도 같이 갱신한다 */
+function changed() { refreshAll(); if (window.Dash && window.Dash.refreshOwner) { window.Dash.refreshOwner(); } }
 function mine(owner) { return !WHO || owner === WHO; }
 function visItems() { return ITEMS.filter(function (it) { return mine(it.owner); }); }
 function paintTarget() {
@@ -229,6 +231,13 @@ function card(it, open) {
     var who = c && c.by ? c.by + " 총괄자가 " + c.at + "에 " + (c.edited ? "수정" : "확정") + "했어요." : "처음 값(예시)이에요.";
     var f0 = faultOf(it); li.appendChild(el("p", "okline", who + (f0 ? " 귀책: " + f0 + " · 중대성: " + sevOf(it) : "") + (c && c.memo ? " · 메모: " + c.memo : "")));
   }
+  var fp = formParts(it, open, kind); li.appendChild(fp.frm); li.appendChild(fp.err); li.appendChild(fp.btns);
+  return li;
+}
+
+/* 문의 성격 · 귀책 · 중대성 · 근거 메모를 고치는 칸 (카드와 담당자별 탭의 문의 카드가 함께 쓴다) */
+function formParts(it, open, kind) {
+  var c = ST.items[it.id];
   var frm = el("div", "frm"); frm.hidden = !open;
   var l1 = el("label", "", "문의 성격"), sk = el("select", "in"); KINDS.forEach(function (k) { var o = el("option", "", k); o.value = k; sk.appendChild(o); }); sk.value = kind; l1.appendChild(sk);
   var l2 = el("label", "", "귀책 담당자 (업무 오류 · 응대 문제)"), sf = el("select", "in");
@@ -237,11 +246,11 @@ function card(it, open) {
   var l3 = el("label", "memo", "근거 메모 (무엇을 보고 정했는지)"), mi = el("input", "in"); mi.type = "text"; mi.maxLength = 120; mi.value = c ? c.memo || "" : ""; mi.placeholder = "예: 급여 대장을 확인했고 계산 입력 실수로 확인됨"; l3.appendChild(mi);
   var l2b = el("label", "", "귀책 중대성 (상 · 중 · 하)"), ss = el("select", "in");
   SEVS.forEach(function (v) { var op = el("option", "", v); op.value = v; ss.appendChild(op); }); ss.value = sevOf(it); l2b.appendChild(ss);
-  frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); frm.appendChild(l3); li.appendChild(frm);
-  var err = el("p", "err"); err.hidden = true; li.appendChild(err);
+  frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); frm.appendChild(l3); 
+  var err = el("p", "err"); err.hidden = true;
   var btns = el("div", "btns"), cf = el("button", "btn sm fill", kind === "확인 전" ? "확정" : "수정 저장"), rv = el("button", "btn sm", "확인 전으로 되돌리기"), ed = el("button", "btn sm", "수정");
   cf.type = "button"; rv.type = "button"; ed.type = "button"; cf.hidden = !open; rv.hidden = !open || kind === "확인 전"; ed.hidden = open;
-  btns.appendChild(ed); btns.appendChild(cf); btns.appendChild(rv); li.appendChild(btns);
+  btns.appendChild(ed); btns.appendChild(cf); btns.appendChild(rv);
   function syncFault() { var need = !!FAULT_KINDS[sk.value]; sf.disabled = !need; ss.disabled = !need; if (need && !sf.value) sf.value = it.owner; if (!need) sf.value = ""; }
   syncFault();
   sk.addEventListener("change", function () { syncFault(); err.hidden = true; });
@@ -254,13 +263,15 @@ function card(it, open) {
       if (!fault) { return showErr(err, "귀책 담당자를 골라 주세요."); }
       if (!memo) { return showErr(err, "업무 오류 · 응대 문제는 근거 메모를 적어야 저장할 수 있어요."); }
     }
-    ST.items[it.id] = { kind: k, fault: fault, sev: FAULT_KINDS[k] ? ss.value : "", memo: memo, by: ST.chief.trim(), at: today(), edited: kind !== "확인 전" }; save(); refreshAll();
+    var nv = { kind: k, fault: fault, sev: FAULT_KINDS[k] ? ss.value : "", memo: memo, by: ST.chief.trim(), at: today(), edited: kind !== "확인 전" };
+    if (c && c.done) { nv.done = c.done; } if (c && c.exc) { nv.exc = true; } // 처리 완성도 · 반영 여부는 그대로 둔다
+    ST.items[it.id] = nv; save(); changed();
   });
   rv.addEventListener("click", function () {
     if (it.base === "확인 전") { delete ST.items[it.id]; } else { ST.items[it.id] = { kind: "확인 전", fault: "", memo: "", by: ST.chief.trim(), at: today() }; }
-    save(); refreshAll();
+    save(); changed();
   });
-  return li;
+  return { frm: frm, err: err, btns: btns };
 }
 
 function renderItems() {
@@ -492,6 +503,7 @@ function loadYear(y) {
       it.cand = p && p.cand ? p.cand : ruleCand(r.text);
       it.sum = p && p.sum ? p.sum : (r.text.length > 16 ? r.text.slice(0, 16) + "…" : r.text);
       if (p && p.tag) { it.tag = p.tag; }
+      r._sit = it; // 담당자별 탭의 문의 카드가 이 문의의 확정 값을 찾아가는 길
       return it;
     });
 }
@@ -546,6 +558,22 @@ function sync(name, year) {
   if (PICK && WHO && PICK !== WHO) { PICK = ""; }
   buildAdj(); refreshSev(); renderItems();
 }
-window.Settle = { render: render, sync: sync };
+/* 담당자별 탭의 문의 카드가 쓰는 입구 */
+function info(r) {
+  var it = r._sit; if (!it) { return null; }
+  return { kind: kindOf(it), fault: faultOf(it), sev: sevOf(it), done: doneOf(it), inc: incOf(it), owner: it.owner };
+}
+function formFor(r) {
+  var it = r._sit, w = el("div", "settle-scope"), fp = formParts(it, true, kindOf(it));
+  w.appendChild(fp.frm); w.appendChild(fp.err); w.appendChild(fp.btns); return w;
+}
+function setEval(r, patch) {
+  var it = r._sit; if (!it) { return; }
+  editItem(it, function (c) {
+    if (patch.sev) { c.sev = patch.sev; } if (patch.done) { c.done = patch.done; }
+    if (patch.inc === true) { delete c.exc; } else if (patch.inc === false) { c.exc = true; }
+  });
+}
+window.Settle = { render: render, sync: sync, info: info, form: formFor, setEval: setEval };
 
 })();

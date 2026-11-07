@@ -11,12 +11,14 @@
   --warn: #8f5410;
   --line: #e2e6ee;
   --shadow: 0 8px 30px rgba(10, 50, 120, .12);
+  --k-s: #b3cdf5; --k-e: #2f6fe0; --k-r: #7a86e8; --k-y: #62c6d6; --k-f: #c3b3f0; --k-u: #d7dce6;
   --font-body: "Noto Sans KR", "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f1624; --sky: #16233f; --card: #1a2438; --ink: #f2f5fa; --muted: #9aa7bd;
     --blue: #6aa4ff; --on-blue: #06122b; --hot: #ff8f86; --warn: #f0b36a; --line: #2a3650;
+    --k-s: #3f5f98; --k-e: #6aa4ff; --k-r: #8f9af0; --k-y: #3fa7b8; --k-f: #8a78cc; --k-u: #4a5670;
     --shadow: 0 8px 30px rgba(0, 0, 0, .4); color-scheme: dark;
   }
 }
@@ -275,3 +277,27 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
   .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 32px; align-items: start; }
   #tab-grade { margin-top: 0; padding-top: 0; border-top: 0; border-left: 1px solid var(--line); padding-left: 32px; }
 }
+
+/* 담당자별 탭의 문의 카드: 처리 여부 · 문의 성격 · 평가 반영 한 줄, 처리 내용은 밑에 따로 */
+.ev { margin-top: 10px; }
+.ev-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.ev-cell { background: var(--bg); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.ev-cell .lab { display: block; font-size: 11.5px; font-weight: 800; color: var(--muted); margin-bottom: 2px; }
+.ev-cell .val { display: block; font-size: 13.5px; font-weight: 700; }
+.ev-cell .sub { display: block; font-size: 12px; color: var(--muted); }
+.kchip { display: inline-block; font-size: 12.5px; font-weight: 800; line-height: 1.7; padding: 0 10px; border-radius: 999px; border: 1px solid var(--ink); color: var(--ink); }
+.kchip i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -0.5px; }
+.ev-link { font: inherit; font-size: 12px; font-weight: 800; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; }
+.ev-cell .ev-link { margin-top: 4px; }
+.ev-ctl { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.ev-ctl select { font: inherit; font-size: 12.5px; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.seg2 { display: inline-flex; border: 1.5px solid var(--blue); border-radius: 999px; overflow: hidden; }
+.seg2 button { font: inherit; font-size: 12px; font-weight: 700; border: 0; background: transparent; color: var(--blue); padding: 1px 10px; cursor: pointer; white-space: nowrap; }
+.seg2 button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.ev .settle-scope { margin-top: 8px; }
+.notebox { margin-top: 10px; background: var(--bg); border-radius: 12px; padding: 8px 12px 10px; }
+.notebox .nh { display: flex; justify-content: space-between; align-items: center; }
+.notebox .nh b { font-size: 13px; }
+.notebox .nt { margin: 4px 0 0; font-size: 14px; white-space: pre-wrap; }
+.notebox .nt.empty { color: var(--muted); }
+.notebox textarea { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--bg); border: 1.5px dashed var(--blue); border-radius: 10px; padding: 6px 10px; resize: vertical; }

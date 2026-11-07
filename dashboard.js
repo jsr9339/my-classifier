@@ -89,6 +89,7 @@
     if (si === -1 && /^[0-3]$/.test(st)) { si = +st; }
     if (si !== -1) { r.step = si; }
     r.stamps[1] = validDate(x.asg); r.stamps[2] = validDate(x.doing); r.stamps[3] = validDate(x.done);
+    r.note = (x.note || "").trim().slice(0, 300); // 처리 내용: 무엇을 했는지 적은 글
     r.owner = (x.owner || "").trim().slice(0, 20); // 칸의 담당자와 다르게 직접 고른 담당자(없으면 칸을 따른다)
     return r;
   }
@@ -111,7 +112,7 @@
     var di = colIndex(head, ["날짜", "접수일", "date"]);
     var ix = { cat: colIndex(head, ["칸"]), urg: colIndex(head, ["긴급도"]), reason: colIndex(head, ["이유"]), chk: colIndex(head, ["사람확인"]),
       step: colIndex(head, ["단계"]), asg: colIndex(head, ["배정일"]), doing: colIndex(head, ["처리시작일"]), done: colIndex(head, ["완료일"]),
-      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]) };
+      aiCat: colIndex(head, ["AI칸"]), aiUrg: colIndex(head, ["AI긴급도"]), owner: colIndex(head, ["담당자"]), note: colIndex(head, ["처리내용"]) };
     var out = [];
     table.slice(1).forEach(function (c) {
       var raw = (c[ti] || "").trim();
@@ -505,7 +506,67 @@
     box.appendChild(cl);
     return box;
   }
-  function itemLi(r) {
+  var KCLS = { "단순 문의": "s", "업무 오류": "e", "응대 문제": "r", "제도·시스템·외부": "y", "현업 팀장·팀원": "f", "확인 전": "u" };
+  var EV_FAULT = { "업무 오류": 1, "응대 문제": 1 };
+  function evCell(label) { var c = el("div", "ev-cell"); c.appendChild(el("span", "lab", label)); return c; }
+  function evSelect(opts, val, label, on) {
+    var s = el("select"); s.setAttribute("aria-label", label);
+    opts.forEach(function (o) { var p = el("option", "", o); p.value = o; s.appendChild(p); }); s.value = val;
+    s.addEventListener("change", function () { on(s.value); }); return s;
+  }
+  // 처리 여부 · 문의 성격 · 평가 반영을 한 줄에 (문의 성격 · 평가 반영 값은 운영 결산과 같다)
+  function evalStrip(r) {
+    var inf = window.Settle && window.Settle.info ? window.Settle.info(r) : null;
+    if (!inf) { return null; }
+    var box = el("div", "ev"), row = el("div", "ev-strip");
+    var c1 = evCell("처리 여부"); c1.appendChild(el("span", "val", STEPS[r.step]));
+    var st = r.stamps[r.step] ? r.stamps[r.step].slice(5) + " 기준" : (r.date ? "접수 " + r.date.slice(5) : "날짜 없음");
+    c1.appendChild(el("span", "sub", st)); row.appendChild(c1);
+    var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
+    kc.appendChild(dot); kc.appendChild(document.createTextNode(inf.kind)); c2.appendChild(kc);
+    c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
+    var kb = el("button", "ev-link", r.kindOpen ? "접기 ▴" : "성격 고치기 ▾"); kb.type = "button";
+    kb.addEventListener("click", function () { r.kindOpen = !r.kindOpen; render(); }); c2.appendChild(kb); row.appendChild(c2);
+    var c3 = evCell("평가 반영");
+    if (EV_FAULT[inf.kind]) {
+      c3.appendChild(el("span", "val", (inf.inc ? "반영" : "제외") + " · 중대성 " + inf.sev));
+      var ctl = el("div", "ev-ctl"), seg = el("div", "seg2");
+      [["반영", true], ["제외", false]].forEach(function (p) {
+        var b = el("button", "", p[0]); b.type = "button"; b.setAttribute("aria-pressed", String(inf.inc === p[1]));
+        b.addEventListener("click", function () { window.Settle.setEval(r, { inc: p[1] }); }); seg.appendChild(b);
+      });
+      ctl.appendChild(seg);
+      ctl.appendChild(evSelect(["상", "중", "하"], inf.sev, "귀책 중대성", function (v) { window.Settle.setEval(r, { sev: v }); }));
+      ctl.appendChild(evSelect(["완전 해결", "일부 해결", "미해결"], inf.done, "처리 완성도", function (v) { window.Settle.setEval(r, { done: v }); }));
+      c3.appendChild(ctl);
+    } else {
+      c3.appendChild(el("span", "val", inf.kind === "확인 전" ? "확정 전" : "해당 없음"));
+      c3.appendChild(el("span", "sub", inf.kind === "확인 전" ? "성격이 정해지면 정해져요" : "귀책이 없어서 점수에 영향이 없어요"));
+    }
+    row.appendChild(c3); box.appendChild(row);
+    if (r.kindOpen) { box.appendChild(window.Settle.form(r)); }
+    return box;
+  }
+  // 처리 내용: 무엇을 했는지 밑에 따로 보여 주고 적을 수 있다
+  function noteBox(r) {
+    var box = el("div", "notebox"), head = el("div", "nh");
+    head.appendChild(el("b", "", "처리 내용"));
+    var eb = el("button", "ev-link", r.noteEditing ? "접기 ▴" : (r.note ? "고치기" : "적기")); eb.type = "button";
+    eb.addEventListener("click", function () { r.noteEditing = !r.noteEditing; render(); });
+    head.appendChild(eb); box.appendChild(head);
+    if (r.noteEditing) {
+      var ta = el("textarea"); ta.rows = 3; ta.maxLength = 300; ta.value = r.note || ""; ta.setAttribute("aria-label", "처리 내용");
+      ta.placeholder = "예: 보험사에 문의함, 담당 부서에 전달함 (실제 이름 · 개인정보는 적지 마세요)";
+      box.appendChild(ta);
+      var bt = el("div", "ev-ctl"), sv = el("button", "btn plain", "저장"), cn = el("button", "btn plain", "취소"); sv.type = "button"; cn.type = "button";
+      sv.addEventListener("click", function () { r.note = ta.value.trim().slice(0, 300); r.noteEditing = false; render(); });
+      cn.addEventListener("click", function () { r.noteEditing = false; render(); });
+      bt.appendChild(sv); bt.appendChild(cn); box.appendChild(bt);
+    } else if (r.note) { box.appendChild(el("p", "nt", r.note)); }
+    else { box.appendChild(el("p", "nt empty", "아직 적은 내용이 없어요")); }
+    return box;
+  }
+  function itemLi(r, full) {
     var li = el("li", r.step === 3 ? "done" : ""), t = el("div", "t");
     t.appendChild(el("span", "chip", r.cat));
     t.appendChild(el("span", "chip" + (r.urg === "높음" ? " hi" : ""), r.urg));
@@ -523,7 +584,9 @@
     if (r.alt) { li.appendChild(el("p", "why alt", "두 번째 분류는 " + r.alt.cat + " / " + r.alt.urg + "였어요. 사람이 확인해 주세요.")); }
     if (r.edited) { li.appendChild(el("p", "why", "AI 분류: " + r.aiCat + " / " + r.aiUrg)); }
     if (r.editing) { li.appendChild(editor(r)); }
+    if (full) { var ev = evalStrip(r); if (ev) { li.appendChild(ev); } }
     li.appendChild(stepper(r));
+    if (full) { li.appendChild(noteBox(r)); }
     return li;
   }
   function renderItems(v) {
@@ -625,10 +688,10 @@
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
   function download() {
-    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자"];
+    var head = ["날짜", "의견", "칸", "긴급도", "이유", "사람확인", "민감", "단계", "배정일", "처리시작일", "완료일", "AI칸", "AI긴급도", "담당자", "처리내용"];
     var lines = [head.join(",")].concat(ROWS.map(function (r) {
       return [r.date || (r.y + "-" + pad(r.m)), r.text, r.cat, r.urg, r.reason || "", r.chk ? "예" : "", r.sens ? "예" : "", STEPS[r.step],
-        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || ""].map(csvCell).join(",");
+        r.stamps[1], r.stamps[2], r.stamps[3], r.edited ? r.aiCat : "", r.edited ? r.aiUrg : "", r.owner || "", r.note || ""].map(csvCell).join(",");
     }));
     saveCSV(lines, "의견함_분류결과.csv");
   }
@@ -674,6 +737,7 @@
   // 운영 결산 탭이 같은 자료를 읽어 가도록 내어 준다 (읽기만 한다)
   window.Dash = {
     ensure: ensureData,
+    refreshOwner: function () { renderOwner(true); }, // 운영 결산 탭에서 값이 바뀌면 문의 카드를 다시 그린다
     data: function () {
       return { rows: ROWS, cats: cats(), nameOf: nameOf, ownerOf: ownerOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years(), who: OSEL.name === ALL ? "" : OSEL.name, year: SEL.y };
     }
@@ -878,7 +942,7 @@
     var rows = byPrio(g.rows.filter(ownerFilter));
     if (!rows.length) { ul.appendChild(el("li", "empty", OSEL.filter === "처리 안 된 것" ? "처리 안 된 의견이 없어요." : "이 조건에 맞는 문장이 없어요.")); }
     var LIMIT = 10, shown = OSEL.all ? rows : rows.slice(0, LIMIT);
-    shown.forEach(function (r) { ul.appendChild(itemLi(r)); });
+    shown.forEach(function (r) { ul.appendChild(itemLi(r, true)); });
     if (rows.length > LIMIT) { more.hidden = false; more.textContent = OSEL.all ? "접기" : "나머지 " + (rows.length - LIMIT) + "건 더 보기"; }
     $("o-copy").onclick = function () {
       var text = ownerText(g), box = $("o-box"), btn = $("o-copy");
