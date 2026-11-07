@@ -77,12 +77,11 @@
   function copyText(t, done) {
     try { navigator.clipboard.writeText(t).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
   }
-  // 이 화면은 문의자에게 직접 보내지 않는다. 처리로 기록하고 답변을 복사해 주면, 담당자가 메일 · 메신저에 붙여 넣어 보낸다.
+  // 데모 화면: «보내기»를 누르면 발송한 것처럼 처리 완료로 바꾸고 보여 주지만, 실제 메일 · 메신저는 나가지 않는다(서버도 부르지 않는다).
   function process(r, name, text, extra) {
     window.Dash.autoSend(r, name, text);
-    var base = "«" + r.text.slice(0, 16) + "…» 문의를 «" + name + "» 답변으로 처리했어요(발송은 하지 않아요)." + (extra || "");
-    copyText(text, function (ok) { say(base + (ok ? " 답변을 복사했어요. 문의자에게 직접 붙여 넣어 보내 주세요." : " «답변 복사»로 복사해 직접 보내 주세요.")); });
-    say(base); render();
+    say("«" + r.text.slice(0, 16) + "…» 문의에 «" + name + "» 답변을 발송했어요. (데모 화면이라 실제로는 나가지 않아요.)" + (extra || ""));
+    render();
   }
   function send(r, ans) {
     if (!window.Dash || !window.Dash.autoSend) { return; }
@@ -105,9 +104,7 @@
     li.appendChild(t); li.appendChild(el("p", "", r.text));
     if (r.auto) {
       li.appendChild(el("p", "why", r.note || ""));
-      var cp = el("button", "alink add", "답변 복사"); cp.type = "button";
-      cp.addEventListener("click", function () { copyText(String(r.note || "").replace(/^\[자동응답\]\s*/, ""), function (ok) { say(ok ? "답변을 복사했어요. 문의자에게 직접 붙여 넣어 보내 주세요." : "복사하지 못했어요. 글을 직접 선택해 복사해 주세요."); }); });
-      li.appendChild(cp);
+      li.appendChild(el("p", "fine", "✔ 발송 완료" + (r.stamps[3] ? " · " + r.stamps[3] : "") + " (데모: 실제로는 나가지 않아요)"));
     }
     var tabs = el("div", "atabs"); tabs.setAttribute("role", "tablist");
     (r.astat === "kc" ? [["kind", "문의 성격 바꾸기"]] : [["send", "자동응답 보내기"], ["write", "자동응답 쓰기"], ["kind", "문의 성격 바꾸기"]]).forEach(function (p) {
@@ -126,7 +123,7 @@
         sel.value = (best || withText[0]).id;
         var prev = el("p", "why"); function upd() { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; prev.textContent = a ? a.text : ""; } upd();
         sel.addEventListener("change", upd);
-        var go = el("button", "alink add", r.auto ? "다시 처리하고 복사" : "처리하고 답변 복사"); go.type = "button"; go.disabled = true;
+        var go = el("button", "alink add", r.auto ? "다시 보내기" : "보내기"); go.type = "button"; go.disabled = true;
         go.addEventListener("click", function () { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; if (a) { send(r, a); } });
         var row = el("div", "aact"); row.appendChild(sel); row.appendChild(go);
         if (risky(r)) { box.appendChild(el("p", "awarn", "긴급 · 민감 · 안전보건 문의예요. 자동응답보다 담당자가 직접 확인해 답하는 것이 안전해요.")); }
@@ -140,7 +137,7 @@
     } else if (r.atab === "write") {
       var wb = el("div", "apane"), ta = el("textarea", "ain"); ta.rows = 3; ta.maxLength = 400; ta.setAttribute("aria-label", "새 자동응답 답변");
       ta.placeholder = "이 문의에 보낼 답변을 적어요 (실제 이름 · 개인정보는 적지 마세요)";
-      var wg = el("button", "alink add", "쓰고 처리하고 복사"); wg.type = "button"; wg.addEventListener("click", function () { write(r, ta.value); });
+      var wg = el("button", "alink add", "쓰고 보내기"); wg.type = "button"; wg.addEventListener("click", function () { write(r, ta.value); });
       if (risky(r)) { wb.appendChild(el("p", "awarn", "긴급 · 민감 · 안전보건 문의예요. 답이 정말 맞는지 한 번 더 확인해 주세요.")); }
       wb.appendChild(ta); wb.appendChild(wg);
       wb.appendChild(el("p", "fine", "쓴 답변은 답변 목록(" + r.cat + ")에 자동으로 쌓여서, 다음에 비슷한 문의가 오면 자동응답이 써요."));
