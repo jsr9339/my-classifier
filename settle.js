@@ -1,4 +1,4 @@
-// 운영 결산 탭: 대시보드와 같은 자료(이 브라우저 화면에만 있는 결과)를 연도별로 세어서 팀별 · 팀원별 달성도를 본다.
+// 운영 결산 탭: 운영 현황과 같은 자료(이 브라우저 화면에만 있는 결과)를 연도별로 세어서 팀별 · 팀원별 달성도를 본다.
 // 총괄자가 적은 값(문의 성격 · 귀책 · 목표값 등)은 이 브라우저(localStorage)에만 저장하고 서버로 보내지 않는다.
 (function () {
 
@@ -27,7 +27,6 @@ var TGT = [
   {k:"t4", name:"기한 넘김 (긴급 높음)", actual:null, unit:"건", def:0, higher:false, nearAdd:1}
 ];
 /* 내년에 볼 것 · 보고서 문구는 숫자에서 뽑아 만든 글이에요 (직접 고칠 수 있어요) */
-function josa(w, a, b) { var c = w.charCodeAt(w.length - 1); return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0) ? a : b; }
 function nextDef() {
   var out = [], top = null;
   Object.keys(CATS).forEach(function (k) { if (CATS[k][1] > 0 && (!top || CATS[k][1] > CATS[top][1])) top = k; });

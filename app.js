@@ -18,7 +18,7 @@
     classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
     auto: ["단순 문의 답변을 처리해요", '<span class="b">사내 의견함</span><br>자동응답'],
     dash: ["의견함 한눈에 보기", '<span class="b">사내 의견함</span><br>운영 현황'],
-    owner: ["담당자별로 확인하기", '<span class="b">담당자별</span><br>응대 현황'],
+    owner: ["담당자별로 확인하기", '<span class="b">담당자별</span><br>운영 현황'],
     settle: ["팀별/팀원별 KPI 달성도 확인", '<span class="b">사내 의견함</span><br>운영 결산']
   };
   function showTab(name) {
@@ -349,7 +349,7 @@
   }).catch(function (e) {
     setStatus(e.message + " — 파일로 직접 열지 말고 로컬 서버(localhost:8000)로 열어 주세요.");
   });
-  // 대시보드(dashboard.js)가 쓴다
+  // 운영 현황(dashboard.js)가 쓴다
   window.App = {
     loaded: loaded,
     rules: function (raw) { return classifyRaw(raw); },

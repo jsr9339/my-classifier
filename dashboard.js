@@ -1,4 +1,4 @@
-// 대시보드 탭: 의견 여러 줄을 묶어서 분류하고 연 · 월별로 보여 준다.
+// 운영 현황 탭: 의견 여러 줄을 묶어서 분류하고 연 · 월별로 보여 준다.
 // 채점 탭의 «내 데이터로 채점»도 같은 분류 코드를 쓴다.
 // 결과는 이 브라우저 화면에만 있고 서버에 저장하지 않는다. (담당자 이름 · 기한 일수만 이 브라우저에 기억한다)
 (function () {
@@ -10,10 +10,6 @@
   // 사람이 먼저 봐야 할 만한 말. 낱말이 있다는 것만 알려 주고, 분류를 바꾸지는 않는다.
   var SENS = ["괴롭힘", "폭언", "폭행", "성희롱", "성추행", "성폭력", "따돌", "모욕", "협박", "갑질", "차별", "자해", "극단적",
     "우울", "공황", "병가", "산재", "임신", "출산", "수술", "죽고", "죽을", "신고", "고발", "부당해고", "해고", "퇴사 강요", "불이익"];
-  var STOP = ["그리고", "그래서", "하지만", "너무", "계속", "정말", "우리", "이번", "지금", "있는", "하는", "같은", "때문", "관련", "대해", "대한",
-    "아직", "매우", "항상", "자꾸", "조금", "많이", "다시", "이미", "그냥", "어떻게", "어디", "언제", "있습니다", "없습니다", "합니다", "입니다",
-    "있어요", "없어요", "해요", "했어요", "됩니다", "돼요", "같아요", "싶어요", "주세요", "않아요", "않았어요", "것이", "수가", "때가"];
-  var ENDINGS = /(?:겠습니다|겠어요|습니다|었어요|았어요|했어요|이에요|예요|입니다|합니다|해요|돼요|되요|해서|하고|하면|인데|이라|으로|에서|에게|부터|까지|처럼|은|는|이|가|을|를|에|의|도|로|와|과|만)$/;
 
   var ROWS = [], SEL = { y: 0, m: 0, ms: null, fs: "전체", fu: "전체", fk: "전체", filter: "전체", all: false, term: "" }, NAMES = {}, OVERDUE = 3, busy = false, PENDING = null, DEMO_ON = false,
     OSEL = { name: "전체 보기", filter: "전체", all: false, ms: null }; // 처음에는 연 전체 · 전체 보기 // ms: 담당자별 탭에서 체크한 달들(비면 연 전체)
@@ -317,21 +313,6 @@
   }
   function inPeriod(r) { return r.y === SEL.y && SEL.ms.indexOf(r.m) !== -1; }
 
-  function topTerms(rows) {
-    var df = {};
-    rows.forEach(function (r) {
-      var seen = {};
-      r.text.replace(/\[[^\]]+\]/g, " ").split(/[^가-힣A-Za-z0-9]+/).forEach(function (w) {
-        w = w.replace(ENDINGS, "");
-        if (w.length < 2 || STOP.indexOf(w) !== -1 || /^[0-9]+$/.test(w)) { return; }
-        seen[w] = 1;
-      });
-      Object.keys(seen).forEach(function (w) { df[w] = (df[w] || 0) + 1; });
-    });
-    return Object.keys(df).filter(function (w) { return df[w] >= 2; })
-      .sort(function (a, b) { return df[b] - df[a] || (a < b ? -1 : 1); }).slice(0, 8).map(function (w) { return { t: w, n: df[w] }; });
-  }
-
   function viewOf() {
     normSel();
     var CN = cats(), rows = ROWS.filter(inPeriod);
@@ -348,7 +329,7 @@
       return sa - sb || a.i - b.i;
     }).map(function (o) { return o.r; });
     return { label: selLabel(SEL.ms), rows: rows, cats: cc, by: by, st: st, tot: rows.length, hi: hi, chk: chk,
-      sens: sens, over: over, avgDays: nD ? sumD / nD : null, nDays: nD, items: items, terms: topTerms(rows) };
+      sens: sens, over: over, avgDays: nD ? sumD / nD : null, nDays: nD, items: items };
   }
 
   function toggleMonth(m, on) {
@@ -733,7 +714,6 @@
       "- 긴급 높음 중 접수 후 " + OVERDUE + "일 넘게 처리되지 않은 것 " + v.over + "건"];
     if (v.avgDays !== null) { lines.push("- 처리 완료까지 평균 " + (Math.round(v.avgDays * 10) / 10) + "일 (" + v.nDays + "건 기준)"); }
     if (topCats.length) { lines.push("- 많이 나온 칸: " + topCats.join(", ")); }
-    if (v.terms.length) { lines.push("- 자주 나온 말: " + v.terms.slice(0, 5).map(function (o) { return o.t + " " + o.n; }).join(", ")); }
     lines.push("※ AI가 분류한 추정 결과이며, 사람이 확인한 뒤 사용해 주세요.");
     return lines.join("\n");
   }
