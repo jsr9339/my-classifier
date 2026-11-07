@@ -182,3 +182,8 @@
 .settle-scope .what { margin: 8px 0 0; font-size: 13.5px; }
 .settle-scope .what b { color: var(--blue); margin-right: 6px; }
 .settle-scope .target { margin: 8px 0; padding: 8px 12px; background: var(--card); border-radius: 12px; font-size: 13.5px; font-weight: 700; }
+.settle-scope .chk { display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink); }
+.settle-scope .chk input { width: auto; accent-color: var(--blue); }
+.settle-scope .frm label.chk { display: flex; font-size: 13px; color: var(--ink); }
+.settle-scope .frm .chk.wide { grid-column: 1 / -1; }
+.settle-scope .sub2 { font-size: 12px; color: var(--muted); white-space: nowrap; }

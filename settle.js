@@ -76,7 +76,6 @@ var ST = defaults();
   } catch (e) { /* 저장된 값이 없어도 동작해요 */ }
 })();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* 저장이 막혀도 동작해요 */ } }
-function adjKey(n) { return YEAR + "|" + n; }
 
 function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
 function $(id) { return document.getElementById("s-" + id); }
@@ -98,6 +97,12 @@ function doneOf(it) {
   var c = ST.items[it.id]; if (c && c.done) return c.done;
   return /답이 없|입금되지 않/.test(it.text) ? "미해결" : /처리 중|한 달째/.test(it.text) ? "일부 해결" : "완전 해결";
 }
+function odExOf(it) { var c = ST.items[it.id]; return !!(c && c.odEx); } // 기한 넘김이지만 담당자 귀책이 아니라고 체크한 건
+function ensureEntry(it) {
+  var c = ST.items[it.id];
+  if (!c) { c = { kind: kindOf(it), fault: faultOf(it), memo: "", by: "", at: today() }; ST.items[it.id] = c; }
+  return c;
+}
 function incOf(it) { var c = ST.items[it.id]; return !(c && c.exc); }
 function editItem(it, fn) {
   var c = ST.items[it.id];
@@ -116,19 +121,19 @@ function paintTarget() {
 }
 function compute() {
   var rows = OWNERS.map(function (o) {
-    return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, sev: { "상": 0, "중": 0, "하": 0 } };
+    return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, ex: 0, exMemos: [], sev: { "상": 0, "중": 0, "하": 0 } };
   });
   var by = {}; rows.forEach(function (r) { by[r.n] = r; });
   var confirmed = 0;
   ITEMS.forEach(function (it) {
     var k = kindOf(it), r = by[it.owner]; if (!r) return; r.mix[KMAP[k]]++;
     if (k !== "확인 전") confirmed++;
+    if (it.over && odExOf(it)) { r.ex++; var em = (ST.items[it.id] || {}).memo; if (em) { r.exMemos.push(em); } }
     if (FAULT_KINDS[k]) { var f = by[faultOf(it)] || r, sv = sevOf(it); if (incOf(it)) { f.fault += num(ST.sevw[sv], 1); f.faultN++; f.sev[sv]++; } else { f.excl++; } }
   });
   rows.forEach(function (r) {
-    var adj = ST.adj[adjKey(r.n)] || { ex: 0, memo: "" };
-    r.ex = Math.min(r.overRaw, Math.max(0, num(adj.ex, 0)));
-    r.over = r.overRaw - r.ex; r.memo = adj.memo || "";
+    r.ex = Math.min(r.overRaw, r.ex);
+    r.over = r.overRaw - r.ex; r.memo = r.exMemos.join(" / ");
     r.rate = pct(r.done, r.total); r.ratio = r.fault / Math.max(r.total, 20) * 100;
     r.pts = {
       rate: Math.round(ST.weights.rate * IND[0].f(r.rate)), days: r.avg === null ? 0 : Math.round(ST.weights.days * IND[1].f(r.avg)),
@@ -243,10 +248,15 @@ function formParts(it, open, kind) {
   var l2 = el("label", "", "귀책 담당자 (업무 오류 · 응대 문제)"), sf = el("select", "in");
   var o0 = el("option", "", "선택"); o0.value = ""; sf.appendChild(o0);
   OWNERS.forEach(function (o) { var op = el("option", "", o.n); op.value = o.n; sf.appendChild(op); }); sf.value = faultOf(it); l2.appendChild(sf);
-  var l3 = el("label", "memo", "근거 메모 (무엇을 보고 정했는지)"), mi = el("input", "in"); mi.type = "text"; mi.maxLength = 120; mi.value = c ? c.memo || "" : ""; mi.placeholder = "예: 급여 대장을 확인했고 계산 입력 실수로 확인됨"; l3.appendChild(mi);
+  var l3 = el("label", "memo", "판단 근거 (귀책 · 기한 넘김을 이렇게 정한 이유, 한 칸에 적어요)"), mi = el("input", "in"); mi.type = "text"; mi.maxLength = 200; mi.value = c ? c.memo || "" : ""; mi.placeholder = "예: 급여 대장을 확인했고 계산 입력 실수로 확인됨 / 평가 시스템 오류라서 귀책 아님"; l3.appendChild(mi);
+  var odBox = null;
+  if (it.over) {
+    odBox = el("label", "chk wide"); var oc = el("input"); oc.type = "checkbox"; oc.checked = odExOf(it); oc.id = "od-" + it.id; odBox.htmlFor = oc.id;
+    odBox.appendChild(oc); odBox.appendChild(document.createTextNode(" 기한 넘김이에요(접수 후 " + (it.age === null ? "?" : it.age) + "일). 담당자 귀책이 아니면 체크해요 → 점수에서 빼요")); odBox.oc = oc;
+  }
   var l2b = el("label", "", "귀책 중대성 (상 · 중 · 하)"), ss = el("select", "in");
   SEVS.forEach(function (v) { var op = el("option", "", v); op.value = v; ss.appendChild(op); }); ss.value = sevOf(it); l2b.appendChild(ss);
-  frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); frm.appendChild(l3); 
+  frm.appendChild(l1); frm.appendChild(l2); frm.appendChild(l2b); if (odBox) { frm.appendChild(odBox); } frm.appendChild(l3); 
   var err = el("p", "err"); err.hidden = true;
   var btns = el("div", "btns"), cf = el("button", "btn sm fill", kind === "확인 전" ? "확정" : "수정 저장"), rv = el("button", "btn sm", "확인 전으로 되돌리기"), ed = el("button", "btn sm", "수정");
   cf.type = "button"; rv.type = "button"; ed.type = "button"; cf.hidden = !open; rv.hidden = !open || kind === "확인 전"; ed.hidden = open;
@@ -261,9 +271,11 @@ function formParts(it, open, kind) {
     if (!ST.chief.trim()) { return showErr(err, "«확정하는 사람(총괄자)» 이름을 먼저 입력해 주세요. 확정한 사람으로 기록돼요."); }
     if (FAULT_KINDS[k]) {
       if (!fault) { return showErr(err, "귀책 담당자를 골라 주세요."); }
-      if (!memo) { return showErr(err, "업무 오류 · 응대 문제는 근거 메모를 적어야 저장할 수 있어요."); }
+      if (!memo) { return showErr(err, "업무 오류 · 응대 문제는 판단 근거를 적어야 저장할 수 있어요."); }
     }
+    if (odBox && odBox.oc.checked && !memo) { return showErr(err, "기한 넘김을 귀책 아님으로 빼려면 판단 근거를 적어야 저장할 수 있어요."); }
     var nv = { kind: k, fault: fault, sev: FAULT_KINDS[k] ? ss.value : "", memo: memo, by: ST.chief.trim(), at: today(), edited: kind !== "확인 전" };
+    if (odBox && odBox.oc.checked) { nv.odEx = true; }
     if (c && c.done) { nv.done = c.done; } if (c && c.exc) { nv.exc = true; } // 처리 완성도 · 반영 여부는 그대로 둔다
     ST.items[it.id] = nv; save(); changed();
   });
@@ -351,17 +363,23 @@ function renderOwnerPanel() {
 /* 담당자별 현황 + 평가 반영 + 점수 */
 function buildAdj() {
   var b = $("adj"); b.textContent = "";
-  OWNERS.filter(function (o) { return mine(o.n); }).forEach(function (o) {
-    var a = ST.adj[adjKey(o.n)] || (ST.adj[adjKey(o.n)] = { ex: 0, memo: "" });
-    var tr = el("tr"); tr.appendChild(el("td", "nm", o.n));
-    var td = el("td"), n = el("input", "in num"); n.type = "number"; n.min = "0"; n.max = String(o.over); n.value = a.ex; n.setAttribute("aria-label", o.n + " 기한 넘김 중 귀책 아님 건수");
-    n.addEventListener("input", function () { a.ex = num(n.value, 0); save(); refreshAll(); });
-    td.appendChild(n); td.appendChild(document.createTextNode(" 건 (기한 넘김 " + o.over + "건 중)")); tr.appendChild(td);
-    var tm = el("td"), m = el("input", "in wide"); m.type = "text"; m.maxLength = 100; m.value = a.memo || ""; m.placeholder = "예: 평가 시스템 오류라서 귀책 아님";
-    m.setAttribute("aria-label", o.n + " 귀책 판단 근거");
-    m.addEventListener("input", function () { a.memo = m.value; save(); refreshScores(); });
-    tm.appendChild(m); tr.appendChild(tm); b.appendChild(tr);
+  var list = ITEMS.filter(function (it) { return it.over && mine(it.owner); });
+  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", (WHO ? WHO + " 님의 " : "") + "기한을 넘긴 건이 없어요."); td0.colSpan = 4; tr0.appendChild(td0); b.appendChild(tr0); return; }
+  list.forEach(function (it) {
+    var tr = el("tr"); tr.appendChild(el("td", "nm", it.owner));
+    var tt = el("td", "", it.text); tt.appendChild(el("span", "sub2", " 접수 후 " + (it.age === null ? "?" : it.age) + "일")); tr.appendChild(tt);
+    var tc = el("td"), lb = el("label", "chk"), cb = el("input"); cb.type = "checkbox"; cb.checked = odExOf(it); cb.setAttribute("aria-label", it.text.slice(0, 12) + " 귀책 아님");
+    cb.addEventListener("change", function () { var c = ensureEntry(it); if (cb.checked) { c.odEx = true; } else { delete c.odEx; } save(); changed(); });
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(" 귀책 아님")); tc.appendChild(lb); tr.appendChild(tc);
+    tr.appendChild(memoCell(it)); b.appendChild(tr);
   });
+}
+/* 판단 근거: 귀책 · 기한 넘김이 같은 한 칸을 쓴다 */
+function memoCell(it) {
+  var td = el("td"), m = el("input", "in wide"); m.type = "text"; m.maxLength = 200; m.value = (ST.items[it.id] || {}).memo || ""; m.placeholder = "예: 평가 시스템 오류라서 귀책 아님";
+  m.setAttribute("aria-label", it.text.slice(0, 12) + " 판단 근거");
+  m.addEventListener("input", function () { ensureEntry(it).memo = m.value; save(); refreshScores(); });
+  td.appendChild(m); return td;
 }
 function refreshOwners(data) {
   var b = $("owners"); b.textContent = "";
@@ -391,7 +409,7 @@ function refreshScores(data) {
 function refreshSev() {
   var b = $("sevrows"); b.textContent = "";
   var list = ITEMS.filter(function (it) { return FAULT_KINDS[kindOf(it)] && mine(faultOf(it) || it.owner); });
-  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", WHO ? WHO + " 님에게 귀책으로 확정된 건이 없어요." : "귀책이 확정된 건이 없어요."); td0.colSpan = 6; tr0.appendChild(td0); b.appendChild(tr0); return; }
+  if (!list.length) { var tr0 = el("tr"), td0 = el("td", "sm", WHO ? WHO + " 님에게 귀책으로 확정된 건이 없어요." : "귀책이 확정된 건이 없어요."); td0.colSpan = 7; tr0.appendChild(td0); b.appendChild(tr0); return; }
   list.forEach(function (it) {
     var inc = incOf(it), tr = el("tr", inc ? "" : "off"); tr.appendChild(el("td", "nm", faultOf(it) || it.owner));
     tr.appendChild(el("td", "", it.text));
@@ -410,7 +428,7 @@ function refreshSev() {
       bt.addEventListener("click", function () { editItem(it, function (c) { if (p[1]) { delete c.exc; } else { c.exc = true; } }); });
       seg.appendChild(bt);
     });
-    tg.appendChild(seg); tr.appendChild(tg); b.appendChild(tr);
+    tg.appendChild(seg); tr.appendChild(tg); tr.appendChild(memoCell(it)); b.appendChild(tr);
   });
 }
 function refreshAll() { var d = compute(); refreshOwners(d); refreshScores(d); refreshSev(); renderItems(); }
@@ -503,6 +521,7 @@ function loadYear(y) {
       it.cand = p && p.cand ? p.cand : ruleCand(r.text);
       it.sum = p && p.sum ? p.sum : (r.text.length > 16 ? r.text.slice(0, 16) + "…" : r.text);
       if (p && p.tag) { it.tag = p.tag; }
+      it.over = D.isOverdue(r); it.age = r.date ? Math.floor((new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) - new Date(+r.date.slice(0, 4), +r.date.slice(5, 7) - 1, +r.date.slice(8, 10))) / 86400000) : null;
       r._sit = it; // 담당자별 탭의 문의 카드가 이 문의의 확정 값을 찾아가는 길
       return it;
     });
