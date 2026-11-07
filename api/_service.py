@@ -24,10 +24,14 @@ def handle_classify(raw_body):
     if os.environ.get("LOCAL_DEV") == "1" and not _limit.configured():
         pass
     else:
+        if not _limit.configured():
+            return 503, {"오류": "한도 저장소(Upstash)가 이 배포에 연결되지 않았습니다", "종류": "한도장치미설정"}
         try:
             ok, used, limit = _limit.count_and_check()
-        except Exception:
-            return 503, {"오류": "사용 한도 장치를 쓸 수 없습니다", "종류": "한도장치"}
+        except Exception as e:
+            code = getattr(e, "code", "")  # HTTP 오류 번호만 알려 준다 (비밀 값은 담지 않는다)
+            return 503, {"오류": "사용 한도 장치를 쓸 수 없습니다", "종류": "한도장치오류",
+                         "세부": (type(e).__name__ + (" %s" % code if code else ""))}
         if not ok:
             return 429, {"오류": "오늘 사용 한도(%d회)에 도달했어요. 내일 다시 써 주세요." % limit, "종류": "한도"}
 
