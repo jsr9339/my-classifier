@@ -184,7 +184,7 @@
   }
 
   function showError(msg) { var n = $("d-note"); n.textContent = msg; n.hidden = !msg; }
-  function setBusy(on) { busy = on; ["d-run", "d-demo", "d-file", "d-text", "d-twice"].forEach(function (id) { $(id).disabled = on; }); }
+  function setBusy(on) { busy = on; ["d-run", "d-file", "d-text", "d-twice"].forEach(function (id) { $(id).disabled = on; }); }
 
   function start(rows) {
     if (busy) { return; }
@@ -209,17 +209,20 @@
         msgs.push("AI가 " + info.ai + "건을 분류했어요. 결과는 추정이에요." + (info.calls === 2 ? " 두 번 분류해서 결과가 다른 " + info.differ + "건은 «사람 확인»으로 표시했어요." : ""));
       } else { msgs.push("분류 결과가 들어 있는 파일이라 AI를 부르지 않았어요."); }
       DEMO_ON = false;
-      openDashboard(msgs.join(" "));
+      openDashboard(msgs.join(" "), true);
     }).catch(function (e) { prog.hidden = true; setBusy(false); showError((e && e.message) || "분류하지 못했어요."); });
   }
 
-  function openDashboard(info) {
+  function openDashboard(info, go) {
     var last = ROWS.reduce(function (a, r) { return Math.max(a, r.y * 100 + r.m); }, 0);
     SEL.y = Math.floor(last / 100); SEL.m = last % 100; SEL.filter = "전체"; SEL.all = false; SEL.term = "";
     $("d-info").textContent = info || ""; $("d-info").hidden = !info;
-    $("d-in").hidden = true; $("d-map").hidden = true; $("d-out").hidden = false;
+    $("d-mine").hidden = !DEMO_ON;
+    $("d-fail").hidden = true;
+    $("d-out").hidden = false;
     $("d-sumbox").hidden = true;
     render();
+    if (go) { $("btn-dash").click(); }
   }
 
   // ---------- 열 고르기 (파일 올리기) ----------
@@ -620,7 +623,8 @@
     saveCSV(lines, "의견함_고친사례.csv");
   }
   function reset() {
-    ROWS = []; PENDING = null; DEMO_ON = false; renderOwner(); $("d-out").hidden = true; $("d-map").hidden = true; $("d-in").hidden = false; $("d-text").value = ""; showError("");
+    ROWS = []; PENDING = null; DEMO_ON = false;
+    loadDemo();
   }
   function readFile(file) {
     return file.arrayBuffer().then(function (buf) {
@@ -628,10 +632,10 @@
       catch (e) { return new TextDecoder("euc-kr").decode(buf); } // 엑셀이 저장한 한글 CSV
     });
   }
-  function demo() {
-    if (busy) { return; }
-    showError("");
-    window.App.loaded.then(function () {
+  // 예시 데이터를 불러와 화면을 바로 보여 준다
+  function loadDemo() {
+    var f = $("d-fail"); f.hidden = false; f.textContent = "예시 데이터를 불러오는 중이에요...";
+    return window.App.loaded.then(function () {
       return fetch("sample.json", { cache: "no-store" });
     }).then(function (r) {
       if (!r.ok) { throw new Error("예시 데이터를 열 수 없어요."); }
@@ -647,8 +651,10 @@
       });
       DEMO_ON = true;
       openDashboard("예시 데이터예요. 지어낸 문장 60개이고, 날짜와 처리 단계도 임의의 값이에요.");
-    }).catch(function (e) { showError(e.message); });
+    }).catch(function (e) { f.hidden = false; f.textContent = (e && e.message) || "예시 데이터를 불러오지 못했어요."; });
   }
+  function ensureData() { return ROWS.length ? Promise.resolve() : loadDemo(); }
+  window.Dash = { ensure: ensureData };
 
   $("d-run").addEventListener("click", function () {
     var t = $("d-text").value;
@@ -673,7 +679,10 @@
   ["d-col-text", "d-col-date", "d-hdr"].forEach(function (id) { $(id).addEventListener("change", renderPreview); });
   $("d-map-go").addEventListener("click", mapGo);
   $("d-map-cancel").addEventListener("click", function () { PENDING = null; $("d-map").hidden = true; $("d-in").hidden = false; });
-  $("d-demo").addEventListener("click", demo);
+  $("d-mine").addEventListener("click", function () {
+    $("btn-classify").click();
+    $("d-in").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $("d-down").addEventListener("click", download);
   $("d-down2").addEventListener("click", downloadEdited);
   $("d-reset").addEventListener("click", reset);
@@ -834,8 +843,7 @@
     renderOwnerDetail(groups);
   }
   $("o-more").addEventListener("click", function () { OSEL.all = !OSEL.all; renderOwner(); });
-  $("o-go").addEventListener("click", function () { $("btn-dash").click(); });
-  $("o-demo").addEventListener("click", demo);
+  $("o-go").addEventListener("click", function () { $("btn-classify").click(); });
 
   // ---------- 채점 탭: 내 데이터로 채점 ----------
   function myScore(table) {

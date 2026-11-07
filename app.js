@@ -28,6 +28,7 @@
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
     document.querySelector(".page").classList.toggle("wide", name === "dash" || name === "owner");
+    if ((name === "dash" || name === "owner") && window.Dash) { window.Dash.ensure(); } // 자료가 없으면 예시 데이터로 바로 보여 준다
   }
 
   function classifyRaw(raw) {
