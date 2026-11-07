@@ -41,24 +41,24 @@ function nextDef() {
   return out;
 }
 function reportDef() {
+  // 대표 보고용: 간결한 개조식(명사형 끝맺음)
   var L = [], y = YD, pr = y.total ? pct(y.done, y.total) : 0, cats = Object.keys(CATS).sort(function (a, b) { return CATS[b][0] - CATS[a][0]; });
-  L.push("[" + YEAR + "년 사내 의견함 결산 (" + y.m1 + "~" + y.m2 + "월)]");
-  L.push("- 접수 " + y.total + "건, 처리 완료 " + y.done + "건(" + pr + "%)." + (y.avg === null ? "" : " 처리까지 평균 " + y.avg.toFixed(1) + "일이 걸렸어요."));
-  L.push("- 긴급 높음 " + y.hi + "건 중 " + y.hiDone + "건(" + (y.hi ? pct(y.hiDone, y.hi) : 0) + "%)을 처리했고, 접수 후 " + y.od + "일을 넘겨 처리되지 않은 건이 " + y.over + "건 남아 있어요.");
-  if (y.h1 + y.h2 > 0 && y.h1 > 0 && y.h2 > 0) {
-    var w1 = y.h2 > y.h1 ? "늘었어요" : y.h2 < y.h1 ? "줄었어요" : "같아요", w2 = y.hi2 > y.hi1 ? "늘었어요" : y.hi2 < y.hi1 ? "줄었어요" : "같아요";
-    L.push("- 상반기 " + y.h1 + "건, 하반기 " + y.h2 + "건이에요(" + w1 + "). 긴급 높음은 " + y.hi1 + "건에서 " + y.hi2 + "건으로 " + w2 + ".");
+  L.push("[" + YEAR + "년 사내 의견함 운영 결산 (" + y.m1 + "~" + y.m2 + "월)]");
+  L.push("- 접수 " + y.total + "건, 처리 완료 " + y.done + "건(" + pr + "%)" + (y.avg === null ? "" : ", 평균 처리 " + y.avg.toFixed(1) + "일"));
+  L.push("- 긴급 높음 " + y.hi + "건 중 " + y.hiDone + "건(" + (y.hi ? pct(y.hiDone, y.hi) : 0) + "%) 처리, " + y.od + "일 초과 미처리 " + y.over + "건");
+  if (y.h1 > 0 && y.h2 > 0) {
+    var w1 = y.h2 > y.h1 ? "증가" : y.h2 < y.h1 ? "감소" : "동일", w2 = y.hi2 > y.hi1 ? "증가" : y.hi2 < y.hi1 ? "감소" : "동일";
+    L.push("- 추이: 상반기 " + y.h1 + "건 → 하반기 " + y.h2 + "건(" + w1 + "), 긴급 높음 " + y.hi1 + "건 → " + y.hi2 + "건(" + w2 + ")");
   }
   if (cats.length) {
-    L.push("- 칸별로는 " + cats.slice(0, 3).map(function (k) { return k + " " + CATS[k][0] + "건"; }).join(", ") + " 순이에요.");
     var t = null; cats.forEach(function (k) { if (CATS[k][1] > 0 && (!t || CATS[k][1] > CATS[t][1])) t = k; });
-    if (t) { L[L.length - 1] += " " + t + josa(t, "은", "는") + " " + CATS[t][0] + "건 중 " + CATS[t][1] + "건이 긴급 높음이에요."; }
+    L.push("- 칸별: " + cats.slice(0, 3).map(function (k) { return k + " " + CATS[k][0] + "건"; }).join(", ") + " 순" + (t ? ". " + t + " " + CATS[t][0] + "건 중 " + CATS[t][1] + "건이 긴급 높음" : ""));
   }
   var o = y.open, u = o[0] + o[1] + o[2];
-  L.push("- 처리되지 않은 의견은 " + u + "건(접수 " + o[0] + " · 담당자 배정 " + o[1] + " · 처리 중 " + o[2] + ")이에요.");
-  L.push("- 내년에 볼 것: " + nextDef().map(function (x) { return x.short; }).join(", "));
-  L.push("※ 분류는 AI의 추정이며, 사람이 확인한 뒤 보고에 사용해 주세요.");
-  return L.join("\n");
+  L.push("- 미처리 " + u + "건(접수 " + o[0] + " · 담당자 배정 " + o[1] + " · 처리 중 " + o[2] + ")");
+  L.push("- 향후 과제: " + nextDef().map(function (x) { return x.short; }).join(", "));
+  L.push("※ 분류는 AI 추정이며, 사람이 확인한 뒤 사용 바람");
+  return L.join(String.fromCharCode(10));
 }
 
 /* ---------- 입력 상태 (이 브라우저에만 저장, 서버로 보내지 않아요) ---------- */
