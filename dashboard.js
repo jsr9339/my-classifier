@@ -751,6 +751,66 @@
     }));
     saveCSV(lines, "의견함_고친사례.csv");
   }
+  // ---------- 전체 백업 (JSON 파일 하나) ----------
+  // 결과(문장 · 처리 단계 · 담당자 · 처리 내용 · 자동응답)와 이 브라우저에만 있던 값(담당자 이름 · 기한 일수 · 총괄자 확정 값 · 자동응답 답변 목록)을 한 파일에 담는다.
+  var BACKUP_KIND = "의견함-백업";
+  function rowToBackup(r) {
+    return { date: r.date || (r.y + "-" + pad(r.m)), text: r.text, cat: r.cat, urg: r.urg, reason: r.reason || "", chk: !!r.chk, step: r.step,
+      stamps: r.stamps.slice(), aiCat: r.edited ? r.aiCat : "", aiUrg: r.edited ? r.aiUrg : "", owner: r.owner || "", note: r.note || "", auto: r.auto || "",
+      kc: !!r.kc, autoOff: !!r.autoOff, autoPrev: r.autoPrev || null };
+  }
+  function readLS(k) { try { return JSON.parse(localStorage.getItem(k) || "null"); } catch (e) { return null; } }
+  function backupObject() {
+    return { 형식: BACKUP_KIND, 버전: 1, 만든날: dstr(todayDate()), 설명: "사내 의견함 백업. 개인정보를 가린 문장이 들어 있어요. 다른 사람에게 보낼 때는 내용을 확인하세요.",
+      rows: ROWS.map(rowToBackup), names: NAMES, overdue: OVERDUE, settle: readLS("settle-v1"), auto: readLS("auto-v1") };
+  }
+  function backupDownload() {
+    var blob = new Blob([JSON.stringify(backupObject(), null, 1)], { type: "application/json" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "의견함_백업_" + dstr(todayDate()) + ".json";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    $("d-bk-msg").textContent = "백업 파일을 내려받았어요(문장 " + ROWS.length + "건). 다음에 «백업 불러오기»로 올리면 그대로 이어서 볼 수 있어요.";
+  }
+  var PENDING_BACKUP = null;
+  function backupRows(list) {
+    var CN = cats();
+    return list.slice(0, 2000).map(function (b) {
+      if (!b || typeof b.text !== "string" || !b.text.trim()) { return null; }
+      var cat = CN.indexOf(b.cat) !== -1 ? b.cat : "", urg = URGS.indexOf(b.urg) !== -1 ? b.urg : "";
+      var st = STEPS[Number(b.step)] || STEPS[0], sg = Array.isArray(b.stamps) ? b.stamps : [];
+      var r = makeRow(b.text.slice(0, 500), typeof b.date === "string" ? b.date : "", { cat: cat, urg: urg, reason: String(b.reason || "").slice(0, 200), chk: b.chk ? "예" : "", step: st,
+        asg: sg[1] || "", doing: sg[2] || "", done: sg[3] || "", aiCat: b.aiCat || "", aiUrg: b.aiUrg || "", owner: String(b.owner || "").slice(0, 20),
+        note: String(b.note || "").slice(0, 300), auto: String(b.auto || "").slice(0, 40), kc: b.kc ? "예" : "" });
+      r.src = r.src || "백업"; r.autoOff = !!b.autoOff;
+      if (b.autoPrev && typeof b.autoPrev === "object") { r.autoPrev = { step: Number(b.autoPrev.step) || 0, stamps: Array.isArray(b.autoPrev.stamps) ? b.autoPrev.stamps.slice(0, 4) : ["", "", "", ""], note: String(b.autoPrev.note || "") }; }
+      return r;
+    }).filter(Boolean);
+  }
+  function backupRead(file) {
+    var msg = $("d-bk-msg"), ok = $("d-bk-ok"); ok.hidden = true; PENDING_BACKUP = null;
+    if (file.size > 5 * 1024 * 1024) { msg.textContent = "파일이 너무 커요(5MB 이하)."; return; }
+    readFile(file).then(function (text) {
+      var obj; try { obj = JSON.parse(text); } catch (e) { msg.textContent = "백업 파일을 읽지 못했어요. «백업 내려받기»로 받은 JSON 파일인지 확인해 주세요."; return; }
+      if (!obj || obj["형식"] !== BACKUP_KIND || !Array.isArray(obj.rows)) { msg.textContent = "이 파일은 의견함 백업이 아니에요."; return; }
+      var rows = backupRows(obj.rows);
+      if (!rows.length) { msg.textContent = "백업에 읽을 수 있는 문장이 없어요."; return; }
+      PENDING_BACKUP = { obj: obj, rows: rows };
+      msg.textContent = "백업에는 문장 " + rows.length + "건이 있어요(" + (obj["만든날"] || "날짜 없음") + "에 만듦). 불러오면 지금 화면의 결과와 이 브라우저에 저장된 확정 값 · 답변 목록 · 담당자 이름을 바꿔요.";
+      ok.hidden = false;
+    }).catch(function () { msg.textContent = "파일을 읽지 못했어요."; });
+  }
+  function backupApply() {
+    var p = PENDING_BACKUP; if (!p) { return; }
+    var o = p.obj, put = function (k, v) { try { if (v && typeof v === "object") { localStorage.setItem(k, JSON.stringify(v)); } else { localStorage.removeItem(k); } } catch (e) { /* 저장이 막혀도 화면은 바꾼다 */ } };
+    ROWS = p.rows; DEMO_ON = false; PENDING = null;
+    NAMES = {}; if (o.names && typeof o.names === "object") { Object.keys(o.names).forEach(function (k) { if (cats().indexOf(k) !== -1) { NAMES[k] = String(o.names[k] || "").slice(0, 20); } }); }
+    saveNames(); OVERDUE = Math.min(30, Math.max(1, Number(o.overdue) || 3)); saveOverdue();
+    put("settle-v1", o.settle); put("auto-v1", o.auto);
+    if (window.Settle && window.Settle.reload) { window.Settle.reload(); }
+    if (window.Auto && window.Auto.reload) { window.Auto.reload(); }
+    PENDING_BACKUP = null; $("d-bk-ok").hidden = true;
+    openDashboard("백업에서 불러왔어요. 문장 " + ROWS.length + "건과 확정 값 · 자동응답 답변 목록을 이어서 볼 수 있어요.");
+    $("d-bk-msg").textContent = "백업을 불러왔어요.";
+  }
   function reset() {
     ROWS = []; PENDING = null; DEMO_ON = false;
     loadDemo();
@@ -838,6 +898,10 @@
   $("d-down").addEventListener("click", download);
   $("d-down2").addEventListener("click", downloadEdited);
   $("d-reset").addEventListener("click", reset);
+  $("d-bk-down").addEventListener("click", backupDownload);
+  $("d-bk-up").addEventListener("click", function () { $("d-bk-file").click(); });
+  $("d-bk-file").addEventListener("change", function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; if (f) { backupRead(f); } });
+  $("d-bk-ok").addEventListener("click", backupApply);
   $("d-sum").addEventListener("click", copySummary);
   $("d-more").addEventListener("click", function () { SEL.all = !SEL.all; render(); });
 

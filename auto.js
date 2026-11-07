@@ -22,7 +22,9 @@
     { cat: "기타", name: "설문 결과 공개", keys: "조사 결과", text: "조사 결과는 설문이 끝난 다음 달 첫째 주에 전 직원에게 메일로 알려 드려요." }
   ];
   function fresh() { return DEFAULTS.map(function (a, i) { return { id: "a" + (i + 1), cat: a.cat, name: a.name, keys: a.keys, text: a.text }; }); }
-  var ST = { on: true, list: fresh(), seq: DEFAULTS.length, cats: [] }; // cats: 담당자가 더 만든 카테고리
+  var ST; // cats: 담당자가 더 만든 카테고리
+  function loadState() { // 이 브라우저에 저장된 답변 목록을 읽는다 (백업을 불러온 뒤에도 쓴다)
+  ST = { on: true, list: fresh(), seq: DEFAULTS.length, cats: [] };
   try {
     var saved = JSON.parse(localStorage.getItem(KEY) || "null");
     if (saved && typeof saved === "object" && Array.isArray(saved.list)) {
@@ -34,6 +36,8 @@
     }
   } catch (e) { /* 저장된 값이 없어도 동작해요 */ }
   ST.cats = Array.isArray(ST.cats) ? ST.cats : [];
+  }
+  loadState();
   function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* 저장이 막혀도 동작해요 */ } }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text != null) { e.textContent = text; } return e; }
   function norm(s) { return String(s || "").replace(/\s+/g, ""); }
@@ -315,5 +319,5 @@
     b.dataset.ask = ""; b.textContent = "처음 답변으로 되돌리기";
     ST.list = fresh(); ST.seq = DEFAULTS.length; changed();
   });
-  window.Auto = { match: match, render: render };
+  window.Auto = { match: match, render: render, reload: function () { loadState(); } };
 })();

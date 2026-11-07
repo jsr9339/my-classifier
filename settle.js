@@ -69,12 +69,14 @@ function defaults() {
   return { chief: "", items: {}, targets: t, weights: w, cut: [90, 75, 60], sevw: { "상": 2, "중": 1, "하": 0.5 }, adj: {}, nextBy: {}, reportBy: {} };
 }
 var ST = defaults();
-(function () {
+function loadState() { // 이 브라우저에 저장된 값을 읽는다 (백업을 불러온 뒤에도 쓴다)
+  ST = defaults();
   try {
     var s = JSON.parse(localStorage.getItem(KEY) || "null");
     if (s && typeof s === "object") { Object.keys(ST).forEach(function (k) { if (s[k] !== undefined) ST[k] = s[k]; }); }
   } catch (e) { /* 저장된 값이 없어도 동작해요 */ }
-})();
+}
+loadState();
 function save() { try { localStorage.setItem(KEY, JSON.stringify(ST)); } catch (e) { /* 저장이 막혀도 동작해요 */ } }
 
 function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -490,6 +492,6 @@ function setKind(r, kind) {
     c.edited = true;
   });
 }
-window.Settle = { render: render, sync: sync, info: info, form: formFor, evalForm: evalFor, setKind: setKind };
+window.Settle = { reload: loadState, render: render, sync: sync, info: info, form: formFor, evalForm: evalFor, setKind: setKind };
 
 })();
