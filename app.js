@@ -14,12 +14,19 @@
     });
   }
 
+  var HERO = {
+    classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
+    dash: ["설문 결과 한눈에 보기", '<span class="b">담당자님</span>,<br>문의 확인 바랍니다.'],
+    grade: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미']
+  };
   function showTab(name) {
-    var isClassify = name === "classify";
-    $("tab-classify").hidden = !isClassify;
-    $("tab-grade").hidden = isClassify;
-    $("btn-classify").setAttribute("aria-selected", String(isClassify));
-    $("btn-grade").setAttribute("aria-selected", String(!isClassify));
+    ["classify", "dash", "grade"].forEach(function (n) {
+      $("tab-" + n).hidden = n !== name;
+      $("btn-" + n).setAttribute("aria-selected", String(n === name));
+    });
+    $("hero-kicker").textContent = HERO[name][0];
+    $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
+    document.querySelector(".page").classList.toggle("wide", name === "dash");
   }
 
   function classifyRaw(raw) {
@@ -286,6 +293,7 @@
 
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-grade").addEventListener("click", function () { showTab("grade"); });
+  $("btn-dash").addEventListener("click", function () { showTab("dash"); });
   $("run").addEventListener("click", runClassify);
   input.addEventListener("input", autoGrow);
   input.addEventListener("keydown", function (e) {
@@ -296,9 +304,16 @@
   $("btn-ai").addEventListener("click", runAIGrade);
   $("btn-download").addEventListener("click", downloadAI);
 
-  Promise.all([getJSON("criteria.json"), getJSON("keywords.json")]).then(function (r) {
+  var loaded = Promise.all([getJSON("criteria.json"), getJSON("keywords.json")]).then(function (r) {
     criteria = r[0]; keywords = r[1];
   }).catch(function (e) {
     setStatus(e.message + " — 파일로 직접 열지 말고 로컬 서버(localhost:8000)로 열어 주세요.");
   });
+  // 대시보드(dashboard.js)가 쓴다
+  window.App = {
+    loaded: loaded,
+    rules: function (raw) { return classifyRaw(raw); },
+    cats: function () { return criteria ? criteria["칸"].slice().sort(function (a, b) { return a["순서"] - b["순서"]; }).map(function (c) { return c["이름"]; }) : []; },
+    setStatus: setStatus
+  };
 })();

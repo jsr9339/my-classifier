@@ -172,3 +172,107 @@ def classify_text(text, api_key=None, model=None):
                 last = type(e).__name__
                 time.sleep(1.0 * (attempt + 1))
     raise GeminiError("Gemini 호출 실패 (%s)" % last)
+
+
+# ---- 묶음 분류: 의견 여러 개를 한 번에 보낸다 (대시보드용) ----
+_BATCH_SCHEMA = {
+    "type": "ARRAY",
+    "items": {
+        "type": "OBJECT",
+        "properties": {
+            "번호": {"type": "INTEGER"},
+            "이유": {"type": "STRING"},
+            "칸": {"type": "STRING", "enum": CATS},
+            "긴급도": {"type": "STRING", "enum": URGS},
+            "확신": {"type": "STRING", "enum": ["높음", "낮음"]},
+        },
+        "required": ["번호", "이유", "칸", "긴급도", "확신"],
+        "propertyOrdering": ["번호", "이유", "칸", "긴급도", "확신"],
+    },
+}
+
+
+def _call_batch(model, api_key, masked_list, timeout):
+    lines = ["아래 의견 %d개를 각각 분류해 주세요. 번호를 그대로 쓰고, 번호마다 결과를 하나씩 내세요." % len(masked_list)]
+    lines += ["%d. %s" % (i + 1, t) for i, t in enumerate(masked_list)]
+    body = {
+        "systemInstruction": {"parts": [{"text": _SYSTEM}]},
+        "contents": [{"role": "user", "parts": [{"text": "\n".join(lines)}]}],
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json",
+            "responseSchema": _BATCH_SCHEMA,
+        },
+    }
+    req = urllib.request.Request(
+        "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        data = json.load(r)
+    out = json.loads(data["candidates"][0]["content"]["parts"][0]["text"])
+    if not isinstance(out, list):
+        raise ValueError("list가 아님")
+    return out
+
+
+def classify_batch(texts, api_key=None, model=None):
+    """의견 여러 개를 가려서 한 번에 Gemini에 보낸다. 입력과 같은 순서의 목록을 돌려주고,
+    분류하지 못한 항목은 None이다."""
+    api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        raise GeminiError("GEMINI_API_KEY가 없습니다")
+    model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
+    masked = [mask_text(str(t).strip())[:MAX_CHARS] for t in texts]
+    valid = [i for i, t in enumerate(masked) if t]
+    if not valid:
+        raise GeminiError("빈 문장입니다")
+    send = [masked[i] for i in valid]
+
+    last, out, used_model = None, None, None
+    deadline = time.time() + float(os.environ.get("REQUEST_BUDGET", "25"))
+    for m in [model] + ([FALLBACK_MODEL] if model != FALLBACK_MODEL else []):
+        for attempt in range(3):
+            remaining = deadline - time.time()
+            if remaining < 3:
+                raise GeminiError("Gemini 호출 시간 초과")
+            try:
+                out = _call_batch(m, api_key, send, min(22, remaining))
+                used_model = m
+                break
+            except urllib.error.HTTPError as e:
+                last = "HTTP %d" % e.code
+                if e.code in (429, 500, 503):
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                break
+            except (urllib.error.URLError, TimeoutError, KeyError, IndexError, ValueError) as e:
+                last = type(e).__name__
+                time.sleep(1.0 * (attempt + 1))
+        if out is not None:
+            break
+    if out is None:
+        raise GeminiError("Gemini 호출 실패 (%s)" % last)
+
+    results = [None] * len(masked)
+    for item in out:
+        try:
+            n = int(item.get("번호")) - 1
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if not 0 <= n < len(send):
+            continue
+        j = valid[n]
+        ok = item.get("칸") in CATS and item.get("긴급도") in URGS
+        results[j] = {
+            "칸": item.get("칸") if item.get("칸") in CATS else "기타",
+            "긴급도": item.get("긴급도") if item.get("긴급도") in URGS else "보통",
+            "이유": str(item.get("이유", ""))[:200],
+            "확신": item.get("확신", "낮음"),
+            "확인필요": bool(item.get("확신") != "높음" or not ok),
+            "가린문장": masked[j],
+            "모델": used_model,
+            "지시문": PROMPT_VERSION,
+        }
+    return results
