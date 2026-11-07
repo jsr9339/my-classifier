@@ -217,7 +217,6 @@
   function runAIGrade() {
     getJSON(ANSWER_PATH).then(function (answers) {
       var n = answers.length;
-      if (!window.confirm("AI로 채점하면 AI를 " + n + "번 부릅니다 (약 " + Math.ceil(n * 5.2 / 60) + "분 걸려요).\n계속할까요?")) { return; }
       var btn = $("btn-ai"), prog = $("ai-progress");
       btn.disabled = true; $("btn-score").disabled = true;
       prog.hidden = false; prog.textContent = "AI 채점 중... 0 / " + n;
