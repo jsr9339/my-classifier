@@ -28,15 +28,15 @@
     return { masked: masked, res: res };
   }
 
-  // ---------- 분류 탭 ----------
-  function showResult(masked, res, how) {
-    $("masked").textContent = masked;
-    $("r-cat").textContent = res["칸"];
-    $("r-urg").textContent = res["긴급도"];
-    $("r-why").textContent = res["이유"];
-    $("r-how").textContent = how;
-    $("r-warn").hidden = !res["확인필요"];
-    $("result").hidden = false;
+  // ---------- 분류 탭 (대화) ----------
+  var busy = false, samples = [];
+  var chat = $("chat"), input = $("input");
+
+  function node(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) { e.className = cls; }
+    if (text != null) { e.textContent = text; }
+    return e;
   }
 
   // AI(Gemini) 호출. 서버로는 이름 · 전화번호 · 사번을 가린 문장만 보낸다.
@@ -57,30 +57,70 @@
     });
   }
 
+  // 대화 한 칸을 더하고 말풍선 본문(.msg)을 돌려준다. 의견은 왼쪽, 답변은 오른쪽.
+  function addTurn(who, label) {
+    var t = node("div", "turn " + who);
+    t.appendChild(node("div", "who", label));
+    var m = node("div", "msg");
+    t.appendChild(m);
+    chat.appendChild(t);
+    var turns = chat.querySelectorAll(".turn");
+    if (turns.length > 24) { turns[0].remove(); turns[1].remove(); } // 오래된 대화는 12쌍까지만 남긴다
+    t.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    return m;
+  }
+
+  function fillAnswer(msg, res, how, raw, masked) {
+    msg.textContent = "";
+    var line = node("div", "line");
+    line.appendChild(node("span", "chip", res["칸"]));
+    line.appendChild(node("span", "chip" + (res["긴급도"] === "높음" ? " hi" : ""), res["긴급도"]));
+    msg.appendChild(line);
+    msg.appendChild(node("p", "", res["이유"]));
+    msg.appendChild(node("p", "src", how));
+    if (masked && masked !== raw) { msg.appendChild(node("p", "src", "가려서 보낸 문장: " + masked)); }
+    if (res["확인필요"]) { msg.appendChild(node("span", "check", "사람이 확인하세요")); }
+  }
+
+  function autoGrow() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 120) + "px";
+  }
+
   // 실패하면(한도 · 오류) 규칙으로 가르고, 그 사실을 화면에 적는다.
   function runClassify() {
-    var raw = $("input").value.trim();
+    var raw = input.value.trim();
+    if (busy) { return; }
     if (!raw) { setStatus("문장을 먼저 넣어 주세요."); return; }
     setStatus("");
-    var btn = $("run");
-    btn.disabled = true; btn.textContent = "분류 중...";
+    busy = true; $("run").disabled = true;
+    input.value = ""; autoGrow();
+    addTurn("me", "의견").textContent = raw;
+    var answer = addTurn("ai", "답변");
+    answer.textContent = "분류 중...";
     callAI(raw).then(function (data) {
-      showResult(data["가린문장"] || Mask.maskText(raw), data, "AI(Gemini) 추정");
+      fillAnswer(answer, data, "AI(Gemini) 추정", raw, data["가린문장"]);
     }).catch(function (e) {
       var out = classifyRaw(raw);
-      showResult(out.masked, out.res, "규칙(AI를 쓸 수 없어 대신 사용)");
+      fillAnswer(answer, out.res, "규칙(AI를 쓸 수 없어 대신 사용)", raw, out.masked);
       setStatus((e && e.message ? e.message : "AI를 쓸 수 없어요") + " — 규칙으로 대신 분류했어요.");
     }).then(function () {
-      btn.disabled = false; btn.textContent = "분류하기";
+      busy = false; $("run").disabled = false;
     });
   }
 
-  function loadSample() {
-    getJSON("examples.json").then(function (list) {
-      var pick = list[Math.floor(Math.random() * list.length)];
-      $("input").value = pick.text;
-      setStatus("");
-    }).catch(function (e) { setStatus(e.message); });
+  function renderTry() {
+    var box = $("try"); box.textContent = "";
+    if (!samples.length) { return; }
+    var pool = samples.slice().sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+    pool.forEach(function (s) {
+      var b = node("button", "", s.text); b.type = "button";
+      b.addEventListener("click", function () { input.value = s.text; autoGrow(); input.focus(); });
+      box.appendChild(b);
+    });
+    var more = node("button", "more", "다른 예시"); more.type = "button";
+    more.addEventListener("click", renderTry);
+    box.appendChild(more);
   }
 
   // ---------- 채점 탭 ----------
@@ -248,7 +288,11 @@
   $("btn-classify").addEventListener("click", function () { showTab("classify"); });
   $("btn-grade").addEventListener("click", function () { showTab("grade"); });
   $("run").addEventListener("click", runClassify);
-  $("sample").addEventListener("click", loadSample);
+  input.addEventListener("input", autoGrow);
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); runClassify(); }
+  });
+  getJSON("examples.json").then(function (list) { samples = list; renderTry(); }).catch(function () {});
   $("btn-score").addEventListener("click", runRuleGrade);
   $("btn-ai").addEventListener("click", runAIGrade);
   $("btn-download").addEventListener("click", downloadAI);
