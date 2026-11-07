@@ -67,20 +67,29 @@
     var n = base, k = 2; while (ST.list.some(function (a) { return a.name === n; })) { n = base + " (" + k + ")"; k++; } return n;
   }
   function say(msg) { var m = $("a-msg"); if (m) { m.textContent = msg; } }
+  // 긴급 높음 · 민감 · 사람 확인 · 안전보건 문의는 자동응답보다 담당자가 직접 확인하는 것이 안전하다
+  function risky(r) { return r.urg === "높음" || !!r.sens || !!r.chk || r.cat === "안전보건"; }
+  function mask(s) { return window.Mask ? window.Mask.maskText(s) : s; } // 답변에도 개인정보처럼 보이는 글은 가린다
+  function copyText(t, done) {
+    try { navigator.clipboard.writeText(t).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+  }
+  // 이 화면은 문의자에게 직접 보내지 않는다. 처리로 기록하고 답변을 복사해 주면, 담당자가 메일 · 메신저에 붙여 넣어 보낸다.
+  function process(r, name, text, extra) {
+    window.Dash.autoSend(r, name, text);
+    var base = "«" + r.text.slice(0, 16) + "…» 문의를 «" + name + "» 답변으로 처리했어요(발송은 하지 않아요)." + (extra || "");
+    copyText(text, function (ok) { say(base + (ok ? " 답변을 복사했어요. 문의자에게 직접 붙여 넣어 보내 주세요." : " «답변 복사»로 복사해 직접 보내 주세요.")); });
+    say(base); render();
+  }
   function send(r, ans) {
     if (!window.Dash || !window.Dash.autoSend) { return; }
-    window.Dash.autoSend(r, ans.name, ans.text);
-    say("«" + r.text.slice(0, 16) + "…» 문의에 «" + ans.name + "» 답변을 보냈어요. 처리 완료로 바뀌었어요.");
-    render();
+    process(r, ans.name, ans.text, "");
   }
   function write(r, text) {
-    text = String(text || "").trim(); if (!text) { say("답변 내용을 먼저 적어 주세요."); return; }
+    text = mask(String(text || "").trim()); if (!text) { say("답변 내용을 먼저 적어 주세요."); return; }
     ST.seq = (ST.seq || ST.list.length) + 1;
     var ans = { id: "a" + ST.seq, cat: r.cat, name: uniqueName(r.text.slice(0, 14).trim()), keys: autoKeys(r.text), text: text.slice(0, 400) };
     ST.list.push(ans); save(); // 쓴 답변은 답변 목록에 그대로 쌓인다
-    window.Dash.autoSend(r, ans.name, ans.text);
-    say("«" + r.text.slice(0, 16) + "…» 문의에 답변을 보냈고, 답변 목록(" + r.cat + ")에도 «" + ans.name + "»으로 쌓았어요. 낱말은 목록에서 고칠 수 있어요.");
-    render();
+    process(r, ans.name, ans.text, " 답변 목록(" + r.cat + ")에도 «" + ans.name + "»으로 쌓았어요. 낱말은 목록에서 고칠 수 있어요.");
   }
   var KIND_BTNS = ["확인 전", "업무 오류", "제도·시스템·외부", "현업 팀장·팀원"], KIND_BACK = "단순 문의";
   function item(r) {
@@ -90,7 +99,12 @@
     else if (r.astat === "kc") { var inf0 = window.Settle.info(r); t.appendChild(el("span", "chip src", "문의 성격 변경 · " + (inf0 ? inf0.kind : ""))); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
     else { t.appendChild(el("span", "chip need", "답변 필요")); t.appendChild(el("span", "chip", STEPS_LABEL[r.step])); }
     li.appendChild(t); li.appendChild(el("p", "", r.text));
-    if (r.auto) { li.appendChild(el("p", "why", r.note || "")); }
+    if (r.auto) {
+      li.appendChild(el("p", "why", r.note || ""));
+      var cp = el("button", "alink add", "답변 복사"); cp.type = "button";
+      cp.addEventListener("click", function () { copyText(String(r.note || "").replace(/^\[자동응답\]\s*/, ""), function (ok) { say(ok ? "답변을 복사했어요. 문의자에게 직접 붙여 넣어 보내 주세요." : "복사하지 못했어요. 글을 직접 선택해 복사해 주세요."); }); });
+      li.appendChild(cp);
+    }
     var tabs = el("div", "atabs"); tabs.setAttribute("role", "tablist");
     (r.astat === "kc" ? [["kind", "문의 성격 바꾸기"]] : [["send", "자동응답 보내기"], ["write", "자동응답 쓰기"], ["kind", "문의 성격 바꾸기"]]).forEach(function (p) {
       var b = el("button", "", p[1]); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-pressed", String(r.atab === p[0]));
@@ -108,17 +122,22 @@
         sel.value = (best || withText[0]).id;
         var prev = el("p", "why"); function upd() { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; prev.textContent = a ? a.text : ""; } upd();
         sel.addEventListener("change", upd);
-        var go = el("button", "alink add", r.auto ? "다시 보내기" : "보내기"); go.type = "button";
+        var go = el("button", "alink add", r.auto ? "다시 처리하고 복사" : "처리하고 답변 복사"); go.type = "button"; go.disabled = true;
         go.addEventListener("click", function () { var a = ST.list.filter(function (x) { return x.id === sel.value; })[0]; if (a) { send(r, a); } });
         var row = el("div", "aact"); row.appendChild(sel); row.appendChild(go);
-        box.appendChild(row); box.appendChild(prev);
+        if (risky(r)) { box.appendChild(el("p", "awarn", "긴급 · 민감 · 안전보건 문의예요. 자동응답보다 담당자가 직접 확인해 답하는 것이 안전해요.")); }
+        var ckl = el("label", "chk2"), ck = el("input"); ck.type = "checkbox";
+        ck.addEventListener("change", function () { go.disabled = !ck.checked; });
+        ckl.appendChild(ck); ckl.appendChild(document.createTextNode(risky(r) ? " 위험할 수 있는 문의지만, 이 답변이 문의와 맞는지 확인했어요" : " 이 답변이 문의와 맞는지 확인했어요"));
+        box.appendChild(row); box.appendChild(prev); box.appendChild(ckl);
         if (best) { box.appendChild(el("p", "fine", "낱말이 가장 잘 맞는 답변을 골라 두었어요.")); }
       }
       li.appendChild(box);
     } else if (r.atab === "write") {
       var wb = el("div", "apane"), ta = el("textarea", "ain"); ta.rows = 3; ta.maxLength = 400; ta.setAttribute("aria-label", "새 자동응답 답변");
       ta.placeholder = "이 문의에 보낼 답변을 적어요 (실제 이름 · 개인정보는 적지 마세요)";
-      var wg = el("button", "alink add", "쓰고 보내기"); wg.type = "button"; wg.addEventListener("click", function () { write(r, ta.value); });
+      var wg = el("button", "alink add", "쓰고 처리하고 복사"); wg.type = "button"; wg.addEventListener("click", function () { write(r, ta.value); });
+      if (risky(r)) { wb.appendChild(el("p", "awarn", "긴급 · 민감 · 안전보건 문의예요. 답이 정말 맞는지 한 번 더 확인해 주세요.")); }
       wb.appendChild(ta); wb.appendChild(wg);
       wb.appendChild(el("p", "fine", "쓴 답변은 답변 목록(" + r.cat + ")에 자동으로 쌓여서, 다음에 비슷한 문의가 오면 자동응답이 써요."));
       li.appendChild(wb);
@@ -191,7 +210,7 @@
     var lk = el("label", "alab", "이런 낱말이 있으면 (쉼표로 나눠요)"), ki = el("input", "ain"); ki.type = "text"; ki.maxLength = 120; ki.value = a.keys; ki.placeholder = "예: 연말정산, 부양가족";
     ki.addEventListener("change", function () { a.keys = ki.value; changed(); }); lk.appendChild(ki); box.appendChild(lk);
     var lt = el("label", "alab", "이렇게 답해요"), ta = el("textarea", "ain"); ta.rows = 3; ta.maxLength = 400; ta.value = a.text; ta.placeholder = "문의자에게 보낼 답변 내용 (실제 이름 · 개인정보는 적지 마세요)";
-    ta.addEventListener("change", function () { a.text = ta.value; changed(); }); lt.appendChild(ta); box.appendChild(lt);
+    ta.addEventListener("change", function () { a.text = mask(ta.value); changed(); }); lt.appendChild(ta); box.appendChild(lt);
     return box;
   }
   // 답변 한 문항: 이름 · 낱말 · 답변 글을 읽기 좋게 보여 주고, 문항마다 «고치기»로 그 문항만 연다

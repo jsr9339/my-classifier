@@ -565,13 +565,13 @@
     row.appendChild(c1b);
     var c2 = evCell("문의 성격"), kc = el("span", "kchip"), dot = el("i"); dot.style.background = "var(--k-" + KCLS[inf.kind] + ")";
     kc.appendChild(dot); kc.appendChild(document.createTextNode(inf.kind)); c2.appendChild(kc);
-    c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
+    c2.appendChild(el("span", "sub", EV_FAULT[inf.kind] ? "귀책 " + inf.fault + (inf.pending ? " · 근거 미확정" : "") : inf.kind === "확인 전" ? "총괄자가 아직 정하지 않았어요" : "귀책 없음"));
     var kb = el("button", "ev-link", r.kindOpen ? "접기 ▴" : "고치기 ▾"); kb.type = "button";
     kb.addEventListener("click", function () { r.kindOpen = !r.kindOpen; render(); }); c2.appendChild(kb); row.appendChild(c2);
     var c3 = evCell("평가 반영"), editable = true; // 처리 완료 카드를 포함해 모든 카드에서 고칠 수 있다
     if (EV_FAULT[inf.kind]) {
-      c3.appendChild(el("span", "val", (inf.inc ? "반영" : "제외") + " · 중대성 " + inf.sev));
-      c3.appendChild(el("span", "sub", "처리 완성도 " + inf.done + (inf.over ? (inf.odEx ? " · 기한 넘김은 귀책 아님" : " · 기한 넘김") : "")));
+      c3.appendChild(el("span", "val", inf.pending ? "미확정 · 점수 제외" : (inf.inc ? "반영" : "제외") + " · 중대성 " + inf.sev));
+      c3.appendChild(el("span", "sub", (inf.pending ? "근거를 적어 확정하면 반영돼요 · " : "") + "처리 완성도 " + inf.done + (inf.over ? (inf.odEx ? " · 기한 넘김은 귀책 아님" : " · 기한 넘김") : "")));
     } else if (inf.over) {
       c3.appendChild(el("span", "val", inf.odEx ? "기한 넘김 · 귀책 아님" : "기한 넘김 · 귀책으로 세요"));
       c3.appendChild(el("span", "sub", inf.odEx ? "점수에서 빼요" : "담당자 귀책이 아니면 고치기에서 체크해요"));
@@ -600,10 +600,13 @@
       ta.placeholder = "예: 보험사에 문의함, 담당 부서에 전달함 (실제 이름 · 개인정보는 적지 마세요)";
       box.appendChild(ta);
       var bt = el("div", "ev-ctl"), sv = el("button", "btn plain", "저장"), cn = el("button", "btn plain", "취소"); sv.type = "button"; cn.type = "button";
-      sv.addEventListener("click", function () { r.note = ta.value.trim().slice(0, 300); r.noteEditing = false; render(); });
+      sv.addEventListener("click", function () {
+        var raw = ta.value.trim().slice(0, 300), v = window.Mask ? window.Mask.maskText(raw) : raw; // 개인정보처럼 보이는 글은 가린다
+        r.noteMasked = v !== raw; r.note = v; r.noteEditing = false; render();
+      });
       cn.addEventListener("click", function () { r.noteEditing = false; render(); });
       bt.appendChild(sv); bt.appendChild(cn); box.appendChild(bt);
-    } else if (r.note) { box.appendChild(el("p", "nt", r.note)); }
+    } else if (r.note) { box.appendChild(el("p", "nt", r.note)); if (r.noteMasked) { box.appendChild(el("p", "sub3", "개인정보처럼 보이는 글은 [ ]로 가렸어요.")); } }
     else { box.appendChild(el("p", "nt empty", "아직 적은 내용이 없어요")); }
     if (r.auto) {
       var ab = el("div", "ev-ctl"); ab.appendChild(el("span", "sub3", "자동응답으로 처리됐어요 · " + r.auto));

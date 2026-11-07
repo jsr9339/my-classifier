@@ -97,6 +97,7 @@ function doneOf(it) {
   var c = ST.items[it.id]; if (c && c.done) return c.done;
   return /답이 없|입금되지 않/.test(it.text) ? "미해결" : /처리 중|한 달째/.test(it.text) ? "일부 해결" : "완전 해결";
 }
+function pendingOf(it) { var c = ST.items[it.id]; return !!(c && c.pending); } // 자동응답 탭에서 빠르게 바꾼 귀책: 근거가 없어서 점수에 넣지 않는다
 function odExOf(it) { var c = ST.items[it.id]; return !!(c && c.odEx); } // 기한 넘김이지만 담당자 귀책이 아니라고 체크한 건
 function ensureEntry(it) {
   var c = ST.items[it.id];
@@ -113,7 +114,7 @@ function editItem(it, fn) {
 function changed() { refreshAll(); if (window.Dash && window.Dash.refresh) { window.Dash.refresh(); } }
 function compute() {
   var rows = OWNERS.map(function (o) {
-    return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, ex: 0, exMemos: [], sev: { "상": 0, "중": 0, "하": 0 } };
+    return { n: o.n, cats: o.cats, total: o.total, done: o.done, avg: o.avg, overRaw: o.over, mix: [0, 0, 0, 0, 0, 0], fault: 0, faultN: 0, excl: 0, pend: 0, ex: 0, exMemos: [], sev: { "상": 0, "중": 0, "하": 0 } };
   });
   var by = {}; rows.forEach(function (r) { by[r.n] = r; });
   var confirmed = 0;
@@ -121,7 +122,10 @@ function compute() {
     var k = kindOf(it), r = by[it.owner]; if (!r) return; r.mix[KMAP[k]]++;
     if (k !== "확인 전") confirmed++;
     if (it.over && odExOf(it)) { r.ex++; var em = (ST.items[it.id] || {}).memo; if (em) { r.exMemos.push(em); } }
-    if (FAULT_KINDS[k]) { var f = by[faultOf(it)] || r, sv = sevOf(it); if (incOf(it)) { f.fault += num(ST.sevw[sv], 1); f.faultN++; f.sev[sv]++; } else { f.excl++; } }
+    if (FAULT_KINDS[k]) {
+      if (pendingOf(it)) { r.pend++; }
+      else { var f = by[faultOf(it)] || r, sv = sevOf(it); if (incOf(it)) { f.fault += num(ST.sevw[sv], 1); f.faultN++; f.sev[sv]++; } else { f.excl++; } }
+    }
   });
   rows.forEach(function (r) {
     r.ex = Math.min(r.overRaw, r.ex);
@@ -231,7 +235,8 @@ function formParts(it, open, kind) {
   sk.addEventListener("change", function () { syncFault(); err.hidden = true; });
   ed.addEventListener("click", function () { frm.hidden = false; cf.hidden = false; rv.hidden = kind === "확인 전"; ed.hidden = true; });
   cf.addEventListener("click", function () {
-    var k = sk.value, fault = sf.value, memo = mi.value.trim();
+    var k = sk.value, fault = sf.value, rawMemo = mi.value.trim(), memo = window.Mask ? window.Mask.maskText(rawMemo) : rawMemo;
+    if (memo !== rawMemo) { mi.value = memo; } // 개인정보처럼 보이는 글은 가린다
     if (k === "확인 전") { return showErr(err, "문의 성격을 골라 주세요. 되돌리려면 «확인 전으로 되돌리기»를 눌러요."); }
     if (!ST.chief.trim()) { return showErr(err, "«확정하는 사람(총괄자)» 이름을 먼저 입력해 주세요. 확정한 사람으로 기록돼요."); }
     if (FAULT_KINDS[k]) {
@@ -260,7 +265,7 @@ function refreshOwners(data) {
     var td = el("td"), mix = el("div", "mix");
     [["s", r.mix[0]], ["e", r.mix[1]], ["r", r.mix[2]], ["y", r.mix[3]], ["f", r.mix[5]], ["u", r.mix[4]]].forEach(function (p) { if (!p[1]) return; var i = el("i", p[0]); i.style.width = (p[1] / r.total * 100) + "%"; mix.appendChild(i); });
     td.appendChild(mix); td.appendChild(el("div", "mixn", "단순 " + r.mix[0] + " · 업무 오류 " + r.mix[1] + " · 응대 " + r.mix[2] + " · 제도·외부 " + r.mix[3] + " · 현업 " + r.mix[5] + " · 확인 전 " + r.mix[4]));
-    tr.appendChild(td); var tf = el("td", "n", r.faultN + "건" + (r.excl ? " (제외 " + r.excl + ")" : "")); tf.title = "상 " + r.sev["상"] + " · 중 " + r.sev["중"] + " · 하 " + r.sev["하"]; tr.appendChild(tf); tr.appendChild(el("td", "n", (Math.round(r.ratio * 10) / 10) + "%"));
+    tr.appendChild(td); var tf = el("td", "n", r.faultN + "건" + (r.excl ? " (제외 " + r.excl + ")" : "") + (r.pend ? " · 미확정 " + r.pend : "")); tf.title = "상 " + r.sev["상"] + " · 중 " + r.sev["중"] + " · 하 " + r.sev["하"]; tr.appendChild(tf); tr.appendChild(el("td", "n", (Math.round(r.ratio * 10) / 10) + "%"));
     b.appendChild(tr);
   });
 }
@@ -427,7 +432,7 @@ function sync(name, year) {
 /* 담당자별 탭의 문의 카드가 쓰는 입구 */
 function info(r) {
   var it = r._sit; if (!it) { return null; }
-  return { kind: kindOf(it), fault: faultOf(it), sev: sevOf(it), done: doneOf(it), inc: incOf(it), owner: it.owner, over: !!it.over, age: it.age, odEx: odExOf(it), memo: (ST.items[it.id] || {}).memo || "" };
+  return { kind: kindOf(it), fault: faultOf(it), sev: sevOf(it), done: doneOf(it), inc: incOf(it), owner: it.owner, over: !!it.over, age: it.age, odEx: odExOf(it), pending: pendingOf(it), memo: (ST.items[it.id] || {}).memo || "" };
 }
 function formFor(r) {
   var it = r._sit, w = el("div", "settle-scope"), fp = formParts(it, true, kindOf(it));
@@ -437,6 +442,7 @@ function formFor(r) {
 function evalFor(r) {
   var it = r._sit, w = el("div", "settle-scope"), f = el("div", "frm"), kind = kindOf(it), fault = !!FAULT_KINDS[kind];
   var err = el("p", "err"); err.hidden = true;
+  if (pendingOf(it)) { f.appendChild(el("p", "note memo", "근거가 아직 확정되지 않아 점수에는 들어가지 않아요. «문의 성격 고치기»에서 근거를 적어 확정하면 반영돼요.")); }
   if (fault) {
     var ls = el("label", "", "평가 반영"), seg = el("div", "seg");
     [["반영", true], ["제외", false]].forEach(function (p) {
@@ -470,7 +476,8 @@ function evalFor(r) {
     f.appendChild(ob);
   }
   var lm = el("label", "memo", "판단 근거 (귀책 · 기한 넘김을 이렇게 정한 이유, 한 칸에 적어요)"); lm.appendChild(mi); f.appendChild(lm);
-  mi.addEventListener("input", function () { ensureEntry(it).memo = mi.value; save(); refreshScores(); err.hidden = true; });
+  mi.addEventListener("input", function () { ensureEntry(it).memo = window.Mask ? window.Mask.maskText(mi.value) : mi.value; save(); refreshScores(); err.hidden = true; });
+  mi.addEventListener("change", function () { var v = window.Mask ? window.Mask.maskText(mi.value) : mi.value; if (v !== mi.value) { mi.value = v; ensureEntry(it).memo = v; save(); } });
   w.appendChild(f); w.appendChild(err); return w;
 }
 /* 자동응답 탭에서 문의의 성격만 빠르게 바꾼다 (근거 · 총괄자 확인은 담당자별 탭에서 이어서 적는다) */
@@ -479,6 +486,7 @@ function setKind(r, kind) {
   editItem(it, function (c) {
     c.kind = kind;
     if (FAULT_KINDS[kind]) { c.fault = c.fault || it.owner; if (!c.sev) { c.sev = sevOf(it); } } else { c.fault = ""; c.sev = ""; }
+    if (FAULT_KINDS[kind]) { c.pending = true; } else { delete c.pending; } // 근거를 적어 확정하기 전에는 점수에 넣지 않는다
     c.edited = true;
   });
 }

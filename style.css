@@ -394,3 +394,7 @@ details.names summary { cursor: pointer; font-size: 13.5px; font-weight: 700; co
 .asum-top .acnt { font-size: 12px; color: var(--muted); font-weight: 700; }
 .acard .atop .alink.add { font: inherit; font-size: 12px; font-weight: 800; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; }
 .akind2 button[aria-pressed="true"] { background: var(--blue); color: var(--on-blue); }
+.awarn { margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--hot) 12%, var(--bg)); color: var(--hot); font-size: 12.5px; font-weight: 700; }
+.chk2 { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.chk2 input { accent-color: var(--blue); }
+.apane .alink.add:disabled { opacity: .4; cursor: default; }
