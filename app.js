@@ -18,17 +18,19 @@
     classify: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미'],
     dash: ["의견함 한눈에 보기", '<span class="b">사내 의견함</span><br>응대 현황'],
     owner: ["담당자별로 확인하기", '<span class="b">담당자별</span><br>응대 현황'],
+    settle: ["팀별/팀원별 KPI 달성도 확인", '<span class="b">사내 의견함</span><br>운영 결산'],
     grade: ["직원 의견 한 줄, 담당자에게 바로", '<span class="b">사내 의견함</span><br>정리 도우미']
   };
   function showTab(name) {
-    ["classify", "dash", "grade", "owner"].forEach(function (n) {
+    ["classify", "dash", "grade", "owner", "settle"].forEach(function (n) {
       $("tab-" + n).hidden = n !== name;
       $("btn-" + n).setAttribute("aria-selected", String(n === name));
     });
     $("hero-kicker").textContent = HERO[name][0];
     $("hero-title").innerHTML = HERO[name][1]; // 고정 문구라서 안전하다
-    document.querySelector(".page").classList.toggle("wide", name === "dash" || name === "owner");
+    document.querySelector(".page").classList.toggle("wide", name === "dash" || name === "owner" || name === "settle");
     if ((name === "dash" || name === "owner") && window.Dash) { window.Dash.ensure(); } // 자료가 없으면 예시 데이터로 바로 보여 준다
+    if (name === "settle" && window.Dash) { window.Dash.ensure().then(function () { if (window.Settle) { window.Settle.render(); } }); }
   }
 
   function classifyRaw(raw) {
@@ -310,6 +312,7 @@
   $("btn-grade").addEventListener("click", function () { showTab("grade"); });
   $("btn-dash").addEventListener("click", function () { showTab("dash"); });
   $("btn-owner").addEventListener("click", function () { showTab("owner"); });
+  $("btn-settle").addEventListener("click", function () { showTab("settle"); });
   $("run").addEventListener("click", runClassify);
   input.addEventListener("input", autoGrow);
   input.addEventListener("keydown", function (e) {

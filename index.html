@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="settle.css">
 </head>
 <body>
 <div class="page">
@@ -23,6 +24,7 @@
       <button type="button" id="btn-grade" role="tab" aria-selected="false">채점</button>
       <button type="button" id="btn-dash" role="tab" aria-selected="false">대시보드</button>
       <button type="button" id="btn-owner" role="tab" aria-selected="false">담당자별</button>
+      <button type="button" id="btn-settle" role="tab" aria-selected="false">운영 결산</button>
     </div>
     <p id="status" class="status" role="status"></p>
 
@@ -150,6 +152,167 @@
       </div>
     </section>
 
+    <section id="tab-settle" hidden>
+      <div class="settle-in">
+    <div class="years" id="s-years" role="group" aria-label="연도"></div>
+
+  
+
+  
+
+  <section class="panel" id="s-noyear" hidden>
+    <h2 id="s-noyear-t">아직 자료가 없어요</h2>
+    <p class="src">«분류» 탭의 «여러 줄 한 번에 분류»로 의견을 분류하면, 연도별로 이 화면에서 결산을 볼 수 있어요.</p>
+  </section>
+
+  <div id="s-ybody">
+<section class="panel" aria-labelledby="s-h-sum">
+    <h2 id="s-h-sum">한 해 요약 <small id="s-sumsub"></small></h2>
+    <p class="src">출처: 대시보드와 같은 자료. 고른 해 전체를 합친 값이에요. 날짜가 없는 의견은 올린 달로 센 값이에요.</p>
+    <div class="tiles" id="s-sumtiles"></div>
+    <p class="line2" id="s-sumline"></p>
+  </section>
+  <section class="panel" aria-labelledby="s-h-mon">
+      <h2 id="s-h-mon">월별 접수 추이 <small id="s-monsub"></small></h2>
+      <p class="src">출처: 접수일이 있는 문장의 월별 건수.</p>
+      <div class="trend" id="s-trend"></div>
+      <div class="legend"><span><i style="background:var(--hot)"></i>높음</span><span><i style="background:var(--blue)"></i>보통</span><span><i style="background:var(--lo)"></i>낮음</span></div>
+    </section>
+  <div class="grid">
+<section class="panel" aria-labelledby="s-h-chk">
+      <h2 id="s-h-chk">운영 점검표 <small>목표값은 직접 입력해요</small></h2>
+      <p class="src">출처: 처리 단계와 날짜 기록. 목표 대비 실적으로 판정해요.</p>
+      <div class="tscroll"><table>
+        <thead><tr><th>지표</th><th class="n">실적</th><th class="n">목표</th><th>판정</th></tr></thead>
+        <tbody id="s-targets"></tbody>
+      </table></div>
+      <p class="note">판정: 목표를 채우면 «달성», 가까우면 «주의», 멀면 «미달»이에요. 가까운 정도는 높을수록 좋은 지표는 10%p, 평균 일수는 20%, 기한 넘김은 1건까지예요.</p>
+    </section><section class="panel" aria-labelledby="s-h-cat">
+      <h2 id="s-h-cat">칸별 한 해 결산 <small>긴급 높음이 많은 순</small></h2>
+      <p class="src">출처: 칸 · 긴급도 분류(AI 추정 + 사람이 고친 값).</p>
+      <div class="tscroll"><table>
+        <thead><tr><th>칸</th><th class="n">접수</th><th>긴급 높음</th><th class="n">처리율</th><th class="n">기한 넘김</th></tr></thead>
+        <tbody id="s-cats"></tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="s-h-it">
+    <h2 id="s-h-it">문의 성격 확정 <small id="s-it-sub"></small></h2>
+    <p class="src">총괄자가 문장마다 성격을 고르고, 업무 오류 · 응대 문제는 귀책 담당자와 근거를 남겨요. 인사 담당자의 실수는 «업무 오류», 현업 팀장 · 팀원 때문에 생긴 건은 «현업 팀장·팀원»으로 따로 나눠요. 확정한 건만 평가에 쓰여요. 아래 탭을 눌러 펼쳐 보세요.</p>
+    <div class="edit-h" style="margin:0 0 4px"><label for="s-chief">확정하는 사람(총괄자) <input class="in" id="s-chief" type="text" maxlength="20" placeholder="예: 홍길동"></label></div>
+    <p class="note" style="margin:6px 0 0">입력한 값은 이 브라우저에만 저장되고 서버로 가지 않아요. 근거 메모에 실제 이름 · 개인정보는 적지 마세요.</p>
+    <div class="flt" id="s-ktabs" role="group" aria-label="문의 성격"></div>
+    <div id="s-kbody" hidden>
+      <p class="kdef" id="s-kdef"></p>
+      <div id="s-kpend" hidden>
+        <h3 id="s-ct" style="font-size:16px">「확인 전」인 건</h3>
+        <div class="tscroll"><table>
+          <thead><tr><th>담당자</th><th class="n">건수</th><th>어떤 문의인가 (후보 표시)</th><th></th></tr></thead>
+          <tbody id="s-pend"></tbody>
+        </table></div>
+        <p class="note">문장마다 <b>후보 표시</b>를 달아 두었지만 이것은 참고용이에요. 확정은 총괄자가 해요. 담당자 줄의 «확정하기»를 누르면 아래에 입력 칸이 열려요.</p>
+        <div class="opanel" id="s-opanel" hidden>
+          <h3 id="s-pick-h"></h3>
+          <div class="flt" id="s-subtabs" role="group" aria-label="확정 또는 수정"></div>
+          <p class="note" id="s-subnote" style="margin-top:0"></p>
+          <ul class="items scroll" id="s-oitems"></ul>
+        </div>
+      </div>
+      <div id="s-klist" hidden>
+        <ul class="items scroll" id="s-kitems"></ul>
+      </div>
+    </div>
+  </section>
+
+<section class="panel" aria-labelledby="s-h-own">
+    <h2 id="s-h-own">담당자별 응대 현황 <small>처리율 + 문의 성격 · 점검용</small></h2>
+    <p class="src" id="s-ownsrc">출처: 처리 단계 · 날짜, 문의 성격(위에서 확정한 값). 확정할 때마다 바로 바뀌어요.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th>맡은 칸</th><th class="n">접수</th><th class="n">처리율</th><th class="n">평균</th><th class="n">기한 넘김</th><th>문의 성격 (건수)</th><th class="n">귀책 확정</th><th class="n">비율</th></tr></thead>
+      <tbody id="s-owners"></tbody>
+    </table></div>
+    <div class="legend mixleg" aria-label="색 설명">
+      <span><i class="k-s"></i>단순 문의</span><span><i class="k-e"></i>업무 오류</span><span><i class="k-r"></i>응대 문제</span>
+      <span><i class="k-y"></i>제도·시스템·외부</span><span><i class="k-f"></i>현업 팀장·팀원</span><span><i class="k-u"></i>확인 전</span>
+    </div>
+    <p class="note">«비율»은 귀책 확정 건수에 중대성 가중치(상 · 중 · 하)를 곱해 더한 값 ÷ max(접수, 20)이에요. 접수가 20건보다 적으면 20건으로 나눠서 한두 건 차이로 크게 흔들리지 않게 해요.</p>
+    <details class="fold" id="s-adjfold">
+      <summary>귀책 여부 확정 <span class="sub">기한 넘김 · 사례별 중대성(상 · 중 · 하)</span></summary>
+      <div class="fold-body">
+    <h3 style="margin-top:12px">기한 넘김의 귀책</h3>
+      <p class="note" style="margin-top:0">기한 넘김이 담당자 귀책인지 아닌지 정해요. 제도 · 시스템 · 현업 요인처럼 담당자 귀책이 아니면 그 건수만큼 «귀책 아님»으로 빼고, 판단 근거를 적어 두세요. 귀책으로 남은 건수만 점수에 들어가요.</p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th>귀책 아님으로 뺄 건수</th><th>판단 근거 · 메모</th></tr></thead>
+      <tbody id="s-adj"></tbody>
+    </table></div>
+      <h3>귀책 사례의 중대성</h3>
+      <p class="note" style="margin-top:0">귀책이 확정된 건마다 얼마나 큰 문제였는지 <b>상 · 중 · 하</b>로 적어요. 예) 급여가 나가지 않은 건 → 상, 평가 시스템 오류로 게시가 잘못된 건 → 중. 기준 안: 상 = 급여 · 안전처럼 당사자에게 바로 피해가 간 건, 중 = 업무 지연이나 불편이 생긴 건, 하 = 경미한 건. 점수의 귀책 비율은 아래 가중치를 곱해서 세요. <b>처리 완성도</b>는 그 건을 얼마나 마무리했는지(완전 해결 · 일부 해결 · 미해결), <b>평가 반영</b>은 그 건을 점수에 넣을지(제외하면 귀책 비율에서 빠져요)를 정해요.</p>
+      <div class="edit-h" style="margin:8px 0">
+        <span class="note" style="margin:0">가중치(건 1개를 몇 건으로 셀지):</span>
+        <label>상 <input class="in num" id="s-sw1" type="number" min="0" step="0.5"></label>
+        <label>중 <input class="in num" id="s-sw2" type="number" min="0" step="0.5"></label>
+        <label>하 <input class="in num" id="s-sw3" type="number" min="0" step="0.5"></label>
+      </div>
+      <div class="tscroll"><table>
+        <thead><tr><th>귀책 담당자</th><th>문의</th><th>성격</th><th>중대성</th><th>처리 완성도</th><th>평가 반영</th></tr></thead>
+        <tbody id="s-sevrows"></tbody>
+      </table></div>
+      </div>
+    </details>
+  </section>
+  <section class="panel" aria-labelledby="s-h-sc">
+    <h2 id="s-h-sc">평가 점수 (예시) <small>현재 자료로 계산 · 참고용</small></h2>
+    <p class="src">확정한 문의 성격이 바뀌면 점수도 바로 바뀌어요.</p>
+    <p class="note" style="margin-top:0" id="s-scnote"></p>
+    <div class="tscroll"><table>
+      <thead><tr><th>담당자</th><th class="n">처리율</th><th class="n">평균 일수</th><th class="n">기한 넘김</th><th class="n">귀책 문의</th><th class="n">합계</th><th class="n">환산(100)</th><th>등급</th><th>귀책 확정 메모</th></tr></thead>
+      <tbody id="s-scores"></tbody>
+    </table></div>
+
+    <details class="fold" id="s-rubfold">
+      <summary>평가 반영 기준표 <span class="sub">배점 · 등급 경계는 직접 입력해요</span></summary>
+      <div class="fold-body">
+        <p class="src">지금 자료로 셀 수 있는 항목만 점수로 환산하고, 나머지는 «기록 전»으로 비워 둬요.</p>
+        <div class="tscroll"><table>
+          <thead><tr><th>영역</th><th>지표</th><th>측정 방법</th><th class="n">배점</th><th>점수 기준(배점에 맞춰 계산)</th><th>자료</th></tr></thead>
+          <tbody id="s-rub"></tbody>
+        </table></div>
+        <p class="note" id="s-wsum"></p>
+        <div class="edit-h" style="margin-top:10px">
+          <span class="note" style="margin:0">등급 경계(환산 점수):</span>
+          <label>우수 <input class="in num" id="s-c1" type="number" min="0" max="100"> 이상</label>
+          <label>양호 <input class="in num" id="s-c2" type="number" min="0" max="100"> 이상</label>
+          <label>보통 <input class="in num" id="s-c3" type="number" min="0" max="100"> 이상</label>
+          <span class="note" style="margin:0">그 미만은 면담 필요</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="caution">
+      <b>도입 전에 확인하세요</b>
+      <ul>
+        <li>이 기준표로 사람의 평가를 하려면 회사 인사 규정, 평가 기준 공지 절차, 노사 협의가 필요한지 먼저 확인해야 해요.</li>
+        <li>칸마다 건수와 긴급 비율이 달라서점수를 담당자끼리 줄 세우는 용도로 쓰기 어려워요. 등급은 절대 기준으로만 봐요.</li>
+        <li>업무 오류와 응대 문제의 귀책은 AI가 판정하지 않아요. 총괄자가 근거를 보고 정해요.</li>
+      </ul>
+    </div>
+  </section>
+
+<section class="panel" aria-labelledby="s-h-next">
+      <h2 id="s-h-next">내년에 볼 것 <small>글을 눌러 직접 고쳐요</small></h2>
+      <p class="src">숫자에서 뽑은 후보예요. 해석과 결정은 인사팀이 해요.</p>
+      <ol class="next" id="s-next"></ol>
+    </section>
+<section class="panel" aria-labelledby="s-h-rep">
+      <h2 id="s-h-rep">연말 보고서 문구 <small>직접 고쳐서 복사해요</small></h2>
+      <p class="src">개인별 점수는 이 문구에 넣지 않아요.</p>
+      <div class="btns" style="margin-top:0"><button class="btn fill" type="button" id="s-copy">보고서 문구 복사</button><button class="btn" type="button" id="s-auto">자동 문구로 되돌리기</button></div>
+      <textarea class="in" id="s-rep" rows="9" aria-label="연말 보고서 문구"></textarea>
+    </section>  </div>
+</div>
+    </section>
+
     <section id="tab-grade" hidden>
       <p class="hint">정답이 있는 문장 30개로 점수를 매겨요. 단추를 누를 때만 정답 파일을 열어요.</p>
       <div class="btns">
@@ -207,5 +370,6 @@
 <script src="rules.js"></script>
 <script src="app.js"></script>
 <script src="dashboard.js"></script>
+<script src="settle.js"></script>
 </body>
 </html>

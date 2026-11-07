@@ -644,6 +644,7 @@
       ROWS = d.rows.map(function (x, i) {
         var r = makeRow(x.t, x.d, { cat: x.c, urg: x.u, chk: x.k ? "예" : "", step: String(x.s) });
         r.src = "예시";
+        if (x.g) { r.preset = { kind: x.g, cand: x.cd || "", sum: x.sm || "", tag: x.tg || "" }; } // 운영 결산 탭의 처음 값(예시)
         // 예시의 단계별 날짜는 접수일에 며칠씩 더해 만든다
         var base = toDate(x.d);
         for (var k = 1; k <= x.s; k++) { r.stamps[k] = dstr(new Date(base.getTime() + (k * 2 + (i % 3)) * DAY)); }
@@ -654,7 +655,13 @@
     }).catch(function (e) { f.hidden = false; f.textContent = (e && e.message) || "예시 데이터를 불러오지 못했어요."; });
   }
   function ensureData() { return ROWS.length ? Promise.resolve() : loadDemo(); }
-  window.Dash = { ensure: ensureData };
+  // 운영 결산 탭이 같은 자료를 읽어 가도록 내어 준다 (읽기만 한다)
+  window.Dash = {
+    ensure: ensureData,
+    data: function () {
+      return { rows: ROWS, cats: cats(), nameOf: nameOf, isOverdue: isOverdue, stepDays: stepDays, overdue: OVERDUE, years: years() };
+    }
+  };
 
   $("d-run").addEventListener("click", function () {
     var t = $("d-text").value;
