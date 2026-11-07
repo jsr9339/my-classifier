@@ -147,7 +147,8 @@ function compute() {
 /* ---------- 그리기 ---------- */
 function tile(big, small, label, hot) {
   var t = el("div", "tile" + (hot ? " hot" : "")), b = el("b", "", big); if (small) { b.appendChild(el("small", "", small)); }
-  t.appendChild(b); t.appendChild(el("span", "", label)); return t;
+  var sp = el("span", ""); label.split("\n").forEach(function (part, i) { if (i) { sp.appendChild(document.createElement("br")); } sp.appendChild(document.createTextNode(part)); }); // 줄바꿈(\n)은 아래 줄로
+  t.appendChild(b); t.appendChild(sp); return t;
 }
 function drawStatic() {
   var y = YD;
@@ -155,7 +156,7 @@ function drawStatic() {
   var tl = $("sumtiles"); tl.textContent = "";
   tl.appendChild(tile(String(y.total), "", "접수"));
   tl.appendChild(tile(String(y.done), " / " + y.total, "처리 완료 (" + (y.total ? pct(y.done, y.total) : 0) + "%)" + (y.auto ? " · 자동응답 " + y.auto + " 포함" : "")));
-  tl.appendChild(tile(String(y.hi), "", "긴급 높음 (처리 완료 " + y.hiDone + " · " + (y.hi ? pct(y.hiDone, y.hi) : 0) + "%)", true));
+  tl.appendChild(tile(String(y.hi), "", "긴급 높음\n(처리 완료 " + y.hiDone + " · " + (y.hi ? pct(y.hiDone, y.hi) : 0) + "%)", true));
   tl.appendChild(tile(String(y.over), "", "기한 넘김", true));
   tl.appendChild(tile(y.avg === null ? "-" : y.avg.toFixed(1), y.avg === null ? "" : "일", "처리까지 평균"));
   $("sumline").textContent = (y.h1 > 0 && y.h2 > 0)
